@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ProductCard } from './ProductCard';
 import { Search, Filter } from 'lucide-react';
-import { Product } from '../App';
+import { Product } from '../Marketplace';
 
 const MOCK_PRODUCTS: Product[] = [
   {

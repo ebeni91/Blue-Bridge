@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ProductCard } from './ProductCard';
-import { Product } from '../types';
+import { Product } from '../Marketplace';
 
 const products: Product[] = [
   {

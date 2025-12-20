@@ -1,6 +1,6 @@
 import { ShoppingCart, Star, MapPin, Heart } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Product } from '../App';
+import { Product } from '../Marketplace';
 
 interface ProductCardProps {
   product: Product;
