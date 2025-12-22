@@ -1,6 +1,6 @@
 import { Heart, ShoppingCart, Eye } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Product } from '../Marketplace';
+import { Product } from '../App';
 
 interface FavoritesProps {
   favorites: Product[];

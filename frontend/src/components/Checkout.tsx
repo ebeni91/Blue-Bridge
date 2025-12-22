@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Check, CreditCard, Banknote, Smartphone } from 'lucide-react';
-import { CartItem } from '../Marketplace';
+import { CartItem } from '../App';
 
 interface CheckoutProps {
   cartItems: CartItem[];

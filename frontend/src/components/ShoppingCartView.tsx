@@ -1,6 +1,6 @@
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { CartItem } from '../Marketplace';
+import { CartItem } from '../App';
 
 interface ShoppingCartViewProps {
   cartItems: CartItem[];
