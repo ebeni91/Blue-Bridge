@@ -1,8 +1,5 @@
 import { ShoppingCart, Heart, User, Repeat2, Home, Sprout } from 'lucide-react';
-// 👇 IMPORT THE SHARED TYPE
-import { View } from '../types';
-
-// ❌ DELETE the local definition: type View = ...
+import { View } from '../types'; // <--- IMPORT SHARED TYPE
 
 interface HeaderProps {
   currentView: View;
@@ -29,15 +26,11 @@ export function Header({ currentView, setCurrentView, cartCount, favoritesCount 
           </div>
 
           <nav className="flex items-center gap-2">
-            {/* Now this comparison works because View includes 'marketplace' */}
+            {/* The error was here because 'marketplace' was missing from the Type */}
             {currentView !== 'marketplace' && (
               <button
                 onClick={() => setCurrentView('marketplace')}
-                className={`p-3 rounded-lg transition-all ${
-                  currentView === 'marketplace'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-emerald-600 hover:bg-emerald-50'
-                }`}
+                className="p-3 rounded-lg transition-all text-emerald-600 hover:bg-emerald-50"
                 title="Home"
               >
                 <Home className="w-5 h-5" />
