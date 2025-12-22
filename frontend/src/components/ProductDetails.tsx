@@ -68,22 +68,22 @@ export function ProductDetails({ product, onAddToCart, onToggleFavorite, isFavor
             <h2 className="text-emerald-700 mb-4">{product.amharicName}</h2>
 
             {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.floor(product.rating)
-                        ? 'text-yellow-500 fill-yellow-500'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-emerald-800">{product.rating}</span>
-              <span className="text-emerald-600">({product.reviews} reviews)</span>
-            </div>
+           // Find this block in ProductDetails.tsx and update:
+<div className="flex items-center gap-1">
+  {[...Array(5)].map((_, i) => (
+    <Star
+      key={i}
+      className={`w-5 h-5 ${
+        // FIX: Add "|| 0" to handle undefined rating
+        i < Math.floor(product.rating || 0) 
+          ? 'text-yellow-500 fill-yellow-500'
+          : 'text-gray-300'
+      }`}
+    />
+  ))}
+</div>
+<span className="text-emerald-800">{product.rating || 0}</span>
+<span className="text-emerald-600">({product.reviews || 0} reviews)</span>
 
             {/* Seller Info */}
             <div className="bg-emerald-50 rounded-xl p-4 mb-6">

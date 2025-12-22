@@ -1,6 +1,8 @@
-import { ShoppingCart, Heart, User, Repeat2, MessageSquare, Home, Sprout } from 'lucide-react';
+import { ShoppingCart, Heart, User, Repeat2, Home, Sprout } from 'lucide-react';
+// 👇 IMPORT THE SHARED TYPE
+import { View } from '../types';
 
-type View = 'marketplace' | 'swap' | 'chat' | 'product-details' | 'favorites' | 'cart' | 'checkout' | 'profile';
+// ❌ DELETE the local definition: type View = ...
 
 interface HeaderProps {
   currentView: View;
@@ -11,7 +13,7 @@ interface HeaderProps {
   user: any;
 }
 
-export function Header({ currentView, setCurrentView, cartCount, favoritesCount, isLoggedIn, user }: HeaderProps) {
+export function Header({ currentView, setCurrentView, cartCount, favoritesCount }: HeaderProps) {
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4 max-w-7xl">
@@ -27,6 +29,7 @@ export function Header({ currentView, setCurrentView, cartCount, favoritesCount,
           </div>
 
           <nav className="flex items-center gap-2">
+            {/* Now this comparison works because View includes 'marketplace' */}
             {currentView !== 'marketplace' && (
               <button
                 onClick={() => setCurrentView('marketplace')}

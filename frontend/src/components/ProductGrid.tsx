@@ -139,10 +139,13 @@ export function ProductGrid({ onViewDetails, onToggleFavorite, onAddToCart, isFa
 
   const categories = ['All', 'Vegetables', 'Fruits', 'Seeds', 'Equipment', 'Poultry'];
 
+  // Inside ProductGrid.tsx function
   const filteredProducts = MOCK_PRODUCTS.filter(product => {
+    // FIX: Use optional chaining (?.) and fallback strings (|| '')
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.amharicName.includes(searchTerm) ||
-                         product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
+                         (product.amharicName || '').includes(searchTerm) ||
+                         (product.farmer || '').toLowerCase().includes(searchTerm.toLowerCase());
+                         
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
