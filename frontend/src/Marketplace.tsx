@@ -114,12 +114,11 @@ export function Marketplace() { // FIXED: Named export
                 Discover fresh produce, seeds, equipment, and more from local farmers
               </p>
             </div>
-            <ProductGrid 
-              onViewDetails={viewProductDetails}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
-              isFavorite={isFavorite}
-            />
+           <ProductGrid 
+              onProductClick={(product) => setCurrentView('product-details')} // Or your logic
+              onAddToCart={addToCart}           // Ensure you pass your addToCart function
+              onToggleFavorite={toggleFavorite} // Ensure you pass your toggleFavorite function
+              />
           </div>
         )}
 

@@ -1,15 +1,15 @@
 import { ShoppingCart, Star, MapPin, Heart } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Product } from '../types';
 
 interface ProductCardProps {
   product: Product;
-  onViewDetails: (product: Product) => void;
+  onClick: (product: Product) => void;          // Mapped to onViewDetails
   onToggleFavorite: (product: Product) => void;
-  onAddToCart?: (product: Product, quantity?: number) => void;
-  isFavorite: boolean;
+  onAddToCart: (product: Product) => void;
+  isFavorite?: boolean; // Optional for now
 }
 
+// Fallback images if the product doesn't have one
 const imageMap: Record<number, string> = {
   1: 'https://images.unsplash.com/photo-1700064165267-8fa68ef07167?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHRvbWF0b2VzfGVufDF8fHx8MTc2NTE0NjM0M3ww&ixlib=rb-4.1.0&q=80&w=1080',
   2: 'https://images.unsplash.com/photo-1700241739138-4ec27c548035?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3JuJTIwaGFydmVzdHxlbnwxfHx8fDE3NjUxMTcwMjR8MA&ixlib=rb-4.1.0&q=80&w=1080',
@@ -21,72 +21,82 @@ const imageMap: Record<number, string> = {
   8: 'https://images.unsplash.com/photo-1710528184650-fc75ae862c13?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHN0cmF3YmVycmllc3xlbnwxfHx8fDE3NjUxMzk0MjB8MA&ixlib=rb-4.1.0&q=80&w=1080',
 };
 
-export function ProductCard({ product, onViewDetails, onToggleFavorite, onAddToCart, isFavorite }: ProductCardProps) {
+export function ProductCard({ product, onClick, onToggleFavorite, onAddToCart, isFavorite = false }: ProductCardProps) {
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger if clicking on favorite or add to cart button
     if ((e.target as HTMLElement).closest('button')) {
       return;
     }
-    onViewDetails(product);
+    onClick(product);
   };
+
+  // Backend doesn't have rating/location yet, so we use placeholders to match the design
+  const displayRating = 4.8; 
+  const displayReviews = 124;
+  const displayLocation = "Debre Birhan, ET"; 
+  const displayFarmer = "Blue Bridge Farm";
+  const displayImage = product.image_url || imageMap[product.id] || imageMap[1];
 
   return (
     <div 
       onClick={handleCardClick}
-      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-emerald-100 cursor-pointer"
+      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-emerald-100 cursor-pointer flex flex-col h-full"
     >
       <div className="relative h-48 overflow-hidden bg-emerald-50">
-        <ImageWithFallback
-          src={imageMap[product.id]}
+        <img
+          src={displayImage}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-3 left-3 bg-emerald-600 text-white px-3 py-1 rounded-full text-sm">
+        <div className="absolute top-3 left-3 bg-emerald-600 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
           {product.category}
         </div>
         <button
-          onClick={() => onToggleFavorite(product)}
-          className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(product);
+          }}
+          className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full transition-all shadow-sm hover:shadow-md"
         >
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-emerald-600'}`} />
+          <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'text-emerald-600'}`} />
         </button>
       </div>
 
-      <div className="p-4">
-        <h3 className="text-emerald-900 mb-1">{product.name}</h3>
-        <p className="text-emerald-600 text-sm mb-2">{product.amharicName}</p>
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="text-emerald-900 font-bold text-lg mb-0.5 line-clamp-1">{product.name}</h3>
+        {product.amharic_name && (
+            <p className="text-emerald-600 text-xs font-medium mb-2">{product.amharic_name}</p>
+        )}
         
         <div className="flex items-center gap-1 mb-2">
           <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-          <span className="text-emerald-800">{product.rating}</span>
-          <span className="text-emerald-600 text-sm">({product.reviews})</span>
+          <span className="text-emerald-800 font-semibold text-sm">{displayRating}</span>
+          <span className="text-emerald-600 text-xs">({displayReviews})</span>
         </div>
 
         <div className="flex items-center gap-1 text-emerald-700 mb-3">
-          <MapPin className="w-4 h-4" />
-          <span className="text-sm">{product.location}</span>
+          <MapPin className="w-3.5 h-3.5" />
+          <span className="text-xs">{displayLocation}</span>
         </div>
 
-        <p className="text-emerald-600 text-sm mb-3">by {product.farmer}</p>
+        <p className="text-emerald-600 text-xs mb-4">by <span className="font-semibold">{displayFarmer}</span></p>
 
-        <div className="flex items-center justify-between pt-3 border-t border-emerald-100">
-          <div>
-            <span className="text-emerald-900">${product.price}</span>
-            <span className="text-emerald-600 text-sm">/{product.unit}</span>
+        <div className="flex items-center justify-between pt-3 border-t border-emerald-100 mt-auto">
+          <div className="flex flex-col">
+            <span className="text-emerald-900 font-bold text-lg">ETB {product.listing_price?.toLocaleString() || product.ask_price.toLocaleString()}</span>
+            <span className="text-emerald-600 text-xs">/{product.unit}</span>
           </div>
           
-          {onAddToCart && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCart(product, 1);
-              }}
-              className="bg-black hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Add to Cart</span>
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(product);
+            }}
+            className="bg-black hover:bg-gray-900 text-white px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span className="text-sm font-medium">Add to Cart</span>
+          </button>
         </div>
       </div>
     </div>
