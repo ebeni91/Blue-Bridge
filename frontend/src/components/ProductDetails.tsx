@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Heart, ShoppingCart, Star, MapPin, Minus, Plus } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Product } from '../App';
+import { Product } from '../types';
 
 interface ProductDetailsProps {
   product: Product;
