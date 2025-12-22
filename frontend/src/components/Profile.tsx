@@ -1,306 +1,272 @@
 import { useState } from 'react';
-import { ArrowLeft, User as UserIcon, Mail, Lock, Calendar, Users, CreditCard, LogOut } from 'lucide-react';
+import { User, LogOut, Phone, Lock, UserPlus, MapPin, Hash, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { login, signup, logout } from '../api/auth';
+import { toast } from 'sonner';
+import { View } from '../types';
 
 interface ProfileProps {
   isLoggedIn: boolean;
   user: any;
-  onLogin: (userData: any) => void;
+  onLogin: (user: any) => void;
   onLogout: () => void;
+  onNavigate: (view: View) => void;
 }
 
-export function Profile({ isLoggedIn, user, onLogin, onLogout }: ProfileProps) {
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: '',
-  });
-  const [signupData, setSignupData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    dateOfBirth: '',
-    sex: '',
-    nationalId: '',
-  });
+export function Profile({ isLoggedIn, user, onLogin, onLogout, onNavigate }: ProfileProps) {
+  const [isLoginView, setIsLoginView] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Form States
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Signup extra fields
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [location, setLocation] = useState('');
+  const [nationalId, setNationalId] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - in real app, validate credentials
-    onLogin({
-      fullName: 'John Doe',
-      email: loginData.email,
-    });
+    setLoading(true);
+    try {
+      const data = await login(phone, password);
+      const userData = {
+        name: data.user_name || fullName,
+        role: data.role,
+        phone: phone
+      };
+      onLogin(userData);
+      toast.success("Welcome back!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Invalid Phone Number or Password");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (signupData.password !== signupData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
+    setLoading(true);
+    try {
+      await signup({
+        full_name: fullName,
+        phone_number: phone,
+        password: password,
+        email: email || null,
+        location: location,
+        national_id: nationalId,
+        role: "buyer"
+      });
+      toast.success("Account created! Please log in.");
+      setIsLoginView(true);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.detail || "Signup failed");
+    } finally {
+      setLoading(false);
     }
-    if (signupData.nationalId.length !== 12) {
-      alert('National ID must be 12 digits');
-      return;
-    }
-    // Mock signup - in real app, create account
-    onLogin({
-      fullName: signupData.fullName,
-      email: signupData.email,
-    });
   };
 
+  const handleLogout = () => {
+    logout();
+    onLogout();
+    toast.info("Logged out successfully");
+  };
+
+  // --- VIEW 1: LOGGED IN PROFILE ---
   if (isLoggedIn && user) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl p-8 border-2 border-emerald-100">
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserIcon className="w-12 h-12 text-white" />
-            </div>
-            <h1 className="text-emerald-900 mb-2">{user.fullName}</h1>
-            <p className="text-emerald-600">{user.email}</p>
-          </div>
-
-          <div className="space-y-4 mb-8">
-            <div className="bg-emerald-50 rounded-xl p-4">
-              <h3 className="text-emerald-900 mb-4">Account Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-emerald-700">
-                  <Mail className="w-5 h-5" />
-                  <span>{user.email}</span>
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-emerald-100">
+          <div className="bg-emerald-600 h-32 relative">
+            <div className="absolute -bottom-12 left-8">
+              <div className="bg-white p-2 rounded-full shadow-lg">
+                <div className="bg-emerald-100 p-4 rounded-full">
+                  <User className="w-12 h-12 text-emerald-600" />
                 </div>
               </div>
             </div>
           </div>
+          
+          <div className="pt-16 pb-8 px-8">
+            <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 
+                user.role === 'agent' ? 'bg-blue-100 text-blue-700' : 
+                'bg-emerald-100 text-emerald-700'
+              }`}>
+                {user.role}
+              </span>
+            </div>
+            
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-4 rounded-xl">
+                <Phone className="w-5 h-5 text-gray-400" />
+                <span>{user.phone || "No phone number"}</span>
+              </div>
+            </div>
 
-          <button
-            onClick={onLogout}
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
+            <div className="mt-8 space-y-3">
+              {/* ADMIN BUTTON */}
+              {(user.role === 'admin' || user.role === 'superadmin') && (
+                <button
+                  onClick={() => onNavigate('admin-dashboard')}
+                  className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-4 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 hover:-translate-y-0.5"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  Open Admin Dashboard
+                </button>
+              )}
+
+              {/* AGENT BUTTON */}
+              {user.role === 'agent' && (
+                <button
+                  onClick={() => onNavigate('agent-dashboard')}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5"
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  Open Agent Dashboard
+                </button>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-4 rounded-xl font-semibold hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // --- VIEW 2: LOGIN / SIGNUP FORMS ---
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl border-2 border-emerald-100 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center border-b-2 border-emerald-100">
-          <div className="bg-gradient-to-br from-emerald-600 to-teal-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserIcon className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-green-700 mb-2">Blue Bridge</h1>
-          <p className="text-green-500">Login to access your profile</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b-2 border-emerald-100 bg-gray-50">
-          <button
-            onClick={() => setActiveTab('login')}
-            className={`flex-1 py-4 transition-all ${
-              activeTab === 'login'
-                ? 'bg-white text-emerald-700 border-b-2 border-emerald-600'
-                : 'text-emerald-600 hover:bg-emerald-50'
-            }`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setActiveTab('signup')}
-            className={`flex-1 py-4 transition-all ${
-              activeTab === 'signup'
-                ? 'bg-white text-emerald-700 border-b-2 border-emerald-600'
-                : 'text-emerald-600 hover:bg-emerald-50'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* Login Form */}
-        {activeTab === 'login' && (
-          <form onSubmit={handleLoginSubmit} className="p-8">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-emerald-700 mb-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="email"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                    placeholder="your.email@example.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-emerald-700 mb-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl transition-all mt-6"
-              >
-                Login
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Signup Form */}
-        {activeTab === 'signup' && (
-          <form onSubmit={handleSignupSubmit} className="p-8">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-emerald-700 mb-2">Full Name *</label>
-                <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={signupData.fullName}
-                    onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                    placeholder="John Doe"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-emerald-700 mb-2">Email *</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="email"
-                    value={signupData.email}
-                    onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                    placeholder="your.email@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-emerald-700 mb-2">Password *</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                    <input
-                      type="password"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                      required
-                      className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-emerald-700 mb-2">Confirm Password *</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                    <input
-                      type="password"
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
-                      required
-                      className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-emerald-700 mb-2">Date of Birth *</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="date"
-                    value={signupData.dateOfBirth}
-                    onChange={(e) => setSignupData({ ...signupData, dateOfBirth: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-emerald-700 mb-2">Sex *</label>
-                <div className="relative">
-                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <select
-                    value={signupData.sex}
-                    onChange={(e) => setSignupData({ ...signupData, sex: e.target.value })}
-                    required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 appearance-none"
-                  >
-                    <option value="">Select sex</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-emerald-700 mb-2">National ID Number (12 digits) *</label>
-                <div className="relative">
-                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={signupData.nationalId}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 12);
-                      setSignupData({ ...signupData, nationalId: value });
-                    }}
-                    required
-                    pattern="[0-9]{12}"
-                    maxLength={12}
-                    className="w-full pl-12 pr-4 py-3 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                    placeholder="123456789012"
-                  />
-                </div>
-                <p className="text-emerald-600 text-sm mt-1">
-                  {signupData.nationalId.length}/12 digits
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl transition-all mt-6"
-              >
-                Create Account
-              </button>
-            </div>
-          </form>
-        )}
-
-        <div className="px-8 pb-8 text-center">
-          <p className="text-emerald-600 text-sm">
-            Continue browsing as guest
+    <div className="max-w-md mx-auto py-12 px-4">
+      <div className="bg-white rounded-3xl shadow-xl p-8 border border-emerald-100">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-emerald-900">
+            {isLoginView ? 'Welcome Back' : 'Create Account'}
+          </h2>
+          <p className="text-gray-500 mt-2">
+            {isLoginView ? 'Enter your credentials to access your account' : 'Join Blue Bridge today'}
           </p>
+        </div>
+
+        <form onSubmit={isLoginView ? handleLogin : handleSignup} className="space-y-4">
+          
+          {/* Signup Extra Fields */}
+          {!isLoginView && (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 ml-1">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Kebede Balcha"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 ml-1">National ID</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                    placeholder="ID Number"
+                    value={nationalId}
+                    onChange={(e) => setNationalId(e.target.value)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Common Fields */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 ml-1">Phone Number</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+              <input
+                type="tel"
+                required
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                placeholder="0911..."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {!isLoginView && (
+             <div className="space-y-2">
+             <label className="text-sm font-medium text-gray-700 ml-1">Location</label>
+             <div className="relative">
+               <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+               <input
+                 type="text"
+                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                 placeholder="City, Region"
+                 value={location}
+                 onChange={(e) => setLocation(e.target.value)}
+               />
+             </div>
+           </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 ml-1">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+              <input
+                type="password"
+                required
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98] mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Processing...' : (isLoginView ? 'Sign In' : 'Create Account')}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setIsLoginView(!isLoginView)}
+            className="text-emerald-600 font-medium hover:text-emerald-700 transition-colors flex items-center justify-center gap-2 mx-auto"
+          >
+            {isLoginView ? (
+              <>
+                <UserPlus className="w-4 h-4" />
+                Don't have an account? Sign Up
+              </>
+            ) : (
+              <>
+                <User className="w-4 h-4" />
+                Already have an account? Sign In
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

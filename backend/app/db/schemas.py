@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List  # <--- ADDED 'List' HERE
 from datetime import datetime
 
 # --- Token Schema (Response for Login) ---
@@ -15,12 +15,12 @@ class UserBase(BaseModel):
     phone_number: str
     gender: Optional[str] = None
     location: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     national_id: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
-    role: str = "buyer" # Default role is buyer
+    role: str = "buyer"
 
 class UserResponse(UserBase):
     id: int
@@ -29,10 +29,7 @@ class UserResponse(UserBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
-
-
-
+        from_attributes = True
 
 # --- Farmer Schemas ---
 class FarmerBase(BaseModel):
@@ -43,7 +40,7 @@ class FarmerBase(BaseModel):
     location: str
 
 class FarmerCreate(FarmerBase):
-    pass # Agents provide all base info
+    pass 
 
 class FarmerResponse(FarmerBase):
     id: int
@@ -52,12 +49,7 @@ class FarmerResponse(FarmerBase):
     created_at: datetime
 
     class Config:
-        from_attributes = True # updated for Pydantic v2 (formerly orm_mode)
-
-
-
-
-# ... (Keep all previous code) ...
+        from_attributes = True
 
 # --- Product Schemas ---
 class ProductBase(BaseModel):
@@ -72,7 +64,7 @@ class ProductBase(BaseModel):
     image_url: Optional[str] = None
 
 class ProductCreate(ProductBase):
-    farmer_unique_id: str # Agent enters "FRM-8392", not the database ID
+    farmer_unique_id: str 
 
 class ProductResponse(ProductBase):
     id: int
@@ -80,6 +72,36 @@ class ProductResponse(ProductBase):
     status: str
     farmer_id: int
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Order Schemas (Checkout) ---
+class OrderItemCreate(BaseModel):
+    product_id: int
+    quantity: float
+
+class OrderCreate(BaseModel):
+    items: List[OrderItemCreate] # <--- This caused the error before
+    shipping_name: str
+    shipping_phone: str
+    shipping_address: str
+    shipping_city: str
+
+class OrderItemResponse(BaseModel):
+    product_id: int
+    quantity: float
+    price_at_purchase: float
+    
+    class Config:
+        from_attributes = True
+
+class OrderResponse(BaseModel):
+    id: int
+    total_price: float
+    status: str
+    created_at: datetime
+    items: List[OrderItemResponse]
 
     class Config:
         from_attributes = True

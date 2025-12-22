@@ -1,8 +1,5 @@
-export type View = 'marketplace' | 'swap' | 'chat' | 'product-details' | 'favorites' | 'cart' | 'checkout' | 'profile' | 'help-center' | 'terms' | 'privacy' | 'shipping' | 'return-policy';
-
-// Add or Update the Product interface
 export interface Product {
-  id: number; // Python sends a number ID
+  id: number;
   name: string;
   amharic_name?: string;
   category: string;
@@ -21,3 +18,21 @@ export interface Product {
 export interface CartItem extends Product {
   quantity: number;
 }
+
+// Added 'agent-dashboard' and 'admin-dashboard' to the View type
+export type View = 
+  | 'marketplace' 
+  | 'swap' 
+  | 'chat' 
+  | 'product-details' 
+  | 'favorites' 
+  | 'cart' 
+  | 'checkout' 
+  | 'profile' 
+  | 'agent-dashboard' 
+  | 'admin-dashboard' 
+  | 'help-center' 
+  | 'terms' 
+  | 'privacy' 
+  | 'shipping' 
+  | 'return-policy';

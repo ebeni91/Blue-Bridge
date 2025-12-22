@@ -36,6 +36,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+# --- THIS IS THE MISSING FUNCTION ---
+async def get_current_active_user(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
 async def get_current_active_superadmin(current_user: models.User = Depends(get_current_user)):
     if current_user.role != models.UserRole.SUPERADMIN:
         raise HTTPException(

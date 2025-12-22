@@ -1,5 +1,3 @@
-import random
-import string
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,50 +6,37 @@ from app.api import deps
 
 router = APIRouter()
 
-# Helper to generate ID (e.g., FRM-8392)
-def generate_farmer_id():
-    suffix = ''.join(random.choices(string.digits, k=4))
-    return f"FRM-{suffix}"
-
-# 1. REGISTER A NEW FARMER (Agents Only)
+# 1. Register a new Farmer (Agents Only)
 @router.post("/", response_model=schemas.FarmerResponse)
 def register_farmer(
-    farmer: schemas.FarmerCreate, 
+    farmer_data: schemas.FarmerCreate,
     db: Session = Depends(deps.get_db),
-    current_agent: models.User = Depends(deps.get_current_active_agent)
+    current_user: models.User = Depends(deps.get_current_active_user)
 ):
-    # Check if National ID already exists
-    if db.query(models.Farmer).filter(models.Farmer.national_id == farmer.national_id).first():
-        raise HTTPException(status_code=400, detail="Farmer with this National ID already registered")
+    if current_user.role not in ["agent", "superadmin", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to register farmers")
 
-    # Create Unique ID loop (ensure uniqueness)
-    unique_id = generate_farmer_id()
-    while db.query(models.Farmer).filter(models.Farmer.farmer_unique_id == unique_id).first():
-        unique_id = generate_farmer_id()
+    if db.query(models.Farmer).filter(models.Farmer.national_id == farmer_data.national_id).first():
+        raise HTTPException(status_code=400, detail="Farmer with this National ID already exists")
+
+    # Generate ID: FRM-2024-0001
+    count = db.query(models.Farmer).count() + 1
+    unique_id = f"FRM-{2024}-{count:04d}"
 
     new_farmer = models.Farmer(
-        **farmer.dict(),
+        **farmer_data.dict(),
         farmer_unique_id=unique_id,
-        agent_id=current_agent.id # Link to the Agent logging in
+        agent_id=current_user.id
     )
-    
     db.add(new_farmer)
     db.commit()
     db.refresh(new_farmer)
     return new_farmer
 
-# 2. LIST MY FARMERS (Agents see theirs, Admins see all)
-@router.get("/", response_model=List[schemas.FarmerResponse])
-def read_farmers(
+# 2. Get Farmers managed by the logged-in Agent
+@router.get("/my-farmers", response_model=List[schemas.FarmerResponse])
+def get_my_farmers(
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_user)
+    current_user: models.User = Depends(deps.get_current_active_user)
 ):
-    # If Superadmin, return ALL farmers
-    if current_user.role == models.UserRole.SUPERADMIN:
-        return db.query(models.Farmer).all()
-    
-    # If Agent, return ONLY farmers they registered
-    if current_user.role == models.UserRole.AGENT:
-        return db.query(models.Farmer).filter(models.Farmer.agent_id == current_user.id).all()
-        
-    return []
+    return db.query(models.Farmer).filter(models.Farmer.agent_id == current_user.id).all()

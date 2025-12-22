@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import models, database
-from app.api.endpoints import auth, users ,farmers, marketplace, ai
+from app.api.endpoints import auth, users ,farmers, marketplace, ai, orders
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Blue Bridge API")
@@ -19,6 +19,7 @@ app.include_router(users.router, prefix="/api/users", tags=["User Management"]) 
 app.include_router(farmers.router, prefix="/api/farmers", tags=["Farmer Management"])
 app.include_router(marketplace.router, prefix="/api/marketplace", tags=["Marketplace"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI Services"])
+app.include_router(orders.router, prefix="/api/orders", tags=["Orders"])
 
 @app.get("/")
 def read_root():

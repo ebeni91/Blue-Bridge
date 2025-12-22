@@ -15,11 +15,16 @@ import { TermsConditions } from './components/TermsConditions';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { ShippingInfo } from './components/ShippingInfo';
 import { ReturnPolicy } from './components/ReturnPolicy';
-import { MessageSquare } from 'lucide-react';
-import { toast, Toaster } from 'sonner'; // FIXED: Removed version number
-import { View, Product, CartItem } from './types'; // FIXED: Imported types
 
-export function Marketplace() { // FIXED: Named export
+// --- DASHBOARD IMPORTS ---
+import { AgentDashboard } from './components/AgentDashboard';
+import { AdminDashboard } from './admin/AdminDashboard'; 
+
+import { MessageSquare } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
+import { View, Product, CartItem } from './types';
+
+export function Marketplace() {
   const [currentView, setCurrentView] = useState<View>('marketplace');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<Product[]>([]);
@@ -35,6 +40,26 @@ export function Marketplace() { // FIXED: Named export
     return () => clearTimeout(timer);
   }, []);
 
+  // --- SECURITY CHECK (New) ---
+  // Redirects unauthorized users if they try to access dashboards
+  useEffect(() => {
+    // 1. Admin Dashboard Security
+    if (currentView === 'admin-dashboard') {
+      if (!isLoggedIn || !user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+        toast.error("Unauthorized Access");
+        setCurrentView('marketplace');
+      }
+    }
+    // 2. Agent Dashboard Security
+    if (currentView === 'agent-dashboard') {
+      if (!isLoggedIn || !user || user.role !== 'agent') {
+        toast.error("Unauthorized Access");
+        setCurrentView('marketplace');
+      }
+    }
+  }, [currentView, isLoggedIn, user]);
+
+  // --- CART HANDLERS ---
   const addToCart = (product: Product, quantity: number = 1) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
@@ -67,6 +92,7 @@ export function Marketplace() { // FIXED: Named export
     setCartItems(prev => prev.filter(item => item.id !== productId));
   };
 
+  // --- FAVORITE HANDLER ---
   const toggleFavorite = (product: Product) => {
     setFavorites(prev => {
       const exists = prev.find(p => p.id === product.id);
@@ -77,10 +103,7 @@ export function Marketplace() { // FIXED: Named export
     });
   };
 
-  const isFavorite = (productId: number) => {
-    return favorites.some(p => p.id === productId);
-  };
-
+  // --- NAVIGATION HELPERS ---
   const viewProductDetails = (product: Product) => {
     setSelectedProduct(product);
     setCurrentView('product-details');
@@ -106,6 +129,8 @@ export function Marketplace() { // FIXED: Named export
       />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
+        
+        {/* 1. MARKETPLACE GRID */}
         {currentView === 'marketplace' && (
           <div>
             <div className="mb-8">
@@ -114,36 +139,50 @@ export function Marketplace() { // FIXED: Named export
                 Discover fresh produce, seeds, equipment, and more from local farmers
               </p>
             </div>
-           <ProductGrid 
-              onProductClick={(product) => setCurrentView('product-details')} // Or your logic
-              onAddToCart={addToCart}           // Ensure you pass your addToCart function
-              onToggleFavorite={toggleFavorite} // Ensure you pass your toggleFavorite function
-              />
+            <ProductGrid 
+               onProductClick={viewProductDetails} 
+               onAddToCart={(product) => addToCart(product, 1)}
+               onToggleFavorite={toggleFavorite} 
+            />
           </div>
         )}
 
+        {/* 2. PRODUCT DETAILS */}
         {currentView === 'product-details' && selectedProduct && (
           <ProductDetails 
             product={selectedProduct}
             onAddToCart={addToCart}
             onToggleFavorite={toggleFavorite}
-            isFavorite={isFavorite(selectedProduct.id)}
             onBack={() => setCurrentView('marketplace')}
           />
         )}
 
-        {/* ... Rest of your views (Favorites, Cart, etc) ... */}
-        {/* I abbreviated this for brevity, keep your original view logic here */}
-        
-        {currentView === 'favorites' && (
-          <Favorites 
-            favorites={favorites}
-            onViewDetails={viewProductDetails}
-            onToggleFavorite={toggleFavorite}
-            onAddToCart={addToCart}
+        {/* 3. AGENT DASHBOARD */}
+        {currentView === 'agent-dashboard' && (
+          <AgentDashboard />
+        )}
+
+        {/* 4. ADMIN DASHBOARD (Updated) */}
+        {currentView === 'admin-dashboard' && (
+          <AdminDashboard user={user} />
+        )}
+
+        {/* 5. PROFILE */}
+        {currentView === 'profile' && (
+          <Profile 
+            isLoggedIn={isLoggedIn}
+            user={user}
+            onLogin={handleLogin}
+            onLogout={() => {
+              setIsLoggedIn(false);
+              setUser(null);
+              setCurrentView('marketplace');
+            }}
+            onNavigate={setCurrentView}
           />
         )}
 
+        {/* 6. SHOPPING CART */}
         {currentView === 'cart' && (
           <ShoppingCartView 
             cartItems={cartItems}
@@ -154,6 +193,7 @@ export function Marketplace() { // FIXED: Named export
           />
         )}
 
+        {/* 7. CHECKOUT */}
         {currentView === 'checkout' && (
           <Checkout 
             cartItems={cartItems}
@@ -165,23 +205,19 @@ export function Marketplace() { // FIXED: Named export
           />
         )}
 
-        {currentView === 'swap' && <SwapInterface />}
-        {currentView === 'chat' && <AiChatBot />}
-        
-        {currentView === 'profile' && (
-          <Profile 
-            isLoggedIn={isLoggedIn}
-            user={user}
-            onLogin={handleLogin}
-            onLogout={() => {
-              setIsLoggedIn(false);
-              setUser(null);
-              setCurrentView('marketplace');
-            }}
+        {/* 8. FAVORITES */}
+        {currentView === 'favorites' && (
+          <Favorites 
+            favorites={favorites}
+            onViewDetails={viewProductDetails}
+            onToggleFavorite={toggleFavorite}
+            onAddToCart={(product) => addToCart(product, 1)}
           />
         )}
-        
-        {/* Helper Pages */}
+
+        {/* 9. OTHER VIEWS */}
+        {currentView === 'swap' && <SwapInterface />}
+        {currentView === 'chat' && <AiChatBot />}
         {currentView === 'help-center' && <HelpCenter onBack={() => setCurrentView('marketplace')} />}
         {currentView === 'terms' && <TermsConditions onBack={() => setCurrentView('marketplace')} />}
         {currentView === 'privacy' && <PrivacyPolicy onBack={() => setCurrentView('marketplace')} />}
@@ -192,6 +228,7 @@ export function Marketplace() { // FIXED: Named export
 
       <Footer onNavigate={(view) => setCurrentView(view as View)} />
 
+      {/* Floating Chat Button */}
       {currentView !== 'chat' && (
         <button
           onClick={() => setCurrentView('chat')}
