@@ -9,3 +9,6 @@
 
   Run `npm run dev` to start the development server.
   
+  uvicorn app.main:app --reload to start the backend
+
+  

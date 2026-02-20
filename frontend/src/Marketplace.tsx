@@ -16,9 +16,11 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { ShippingInfo } from './components/ShippingInfo';
 import { ReturnPolicy } from './components/ReturnPolicy';
 
-// --- DASHBOARD IMPORTS ---
+// --- ROLE-SPECIFIC DASHBOARDS ---
+// Ensure these files exist in these folders
 import { AgentDashboard } from './components/AgentDashboard';
 import { AdminDashboard } from './admin/AdminDashboard'; 
+import { SuperAdminDashboard } from './admin/SuperAdminDashboard'; 
 
 import { MessageSquare } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
@@ -33,6 +35,7 @@ export function Marketplace() {
   const [user, setUser] = useState<any>(null);
   const [showSplash, setShowSplash] = useState(true);
 
+  // Splash Screen Timer
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -40,26 +43,37 @@ export function Marketplace() {
     return () => clearTimeout(timer);
   }, []);
 
-  // --- SECURITY CHECK (New) ---
-  // Redirects unauthorized users if they try to access dashboards
+  // --- SECURITY & ACCESS CONTROL ---
+  // This effect watches the currentView and User Role to prevent unauthorized access
   useEffect(() => {
-    // 1. Admin Dashboard Security
-    if (currentView === 'admin-dashboard') {
-      if (!isLoggedIn || !user || (user.role !== 'admin' && user.role !== 'superadmin')) {
-        toast.error("Unauthorized Access");
+    const role = user?.role;
+
+    // 1. Superadmin Dashboard Security
+    if (currentView === 'superadmin-dashboard') {
+      if (!isLoggedIn || role !== 'superadmin') {
+        toast.error("Access Denied: Superadmins Only");
         setCurrentView('marketplace');
       }
     }
-    // 2. Agent Dashboard Security
+    
+    // 2. Admin Dashboard Security
+    if (currentView === 'admin-dashboard') {
+      if (!isLoggedIn || role !== 'admin') {
+        toast.error("Access Denied: Admins Only");
+        setCurrentView('marketplace');
+      }
+    }
+
+    // 3. Agent Dashboard Security
     if (currentView === 'agent-dashboard') {
-      if (!isLoggedIn || !user || user.role !== 'agent') {
-        toast.error("Unauthorized Access");
+      if (!isLoggedIn || role !== 'agent') {
+        toast.error("Access Denied: Agents Only");
         setCurrentView('marketplace');
       }
     }
   }, [currentView, isLoggedIn, user]);
 
-  // --- CART HANDLERS ---
+  // --- CART FUNCTIONS ---
   const addToCart = (product: Product, quantity: number = 1) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
@@ -92,7 +106,7 @@ export function Marketplace() {
     setCartItems(prev => prev.filter(item => item.id !== productId));
   };
 
-  // --- FAVORITE HANDLER ---
+  // --- FAVORITE FUNCTION ---
   const toggleFavorite = (product: Product) => {
     setFavorites(prev => {
       const exists = prev.find(p => p.id === product.id);
@@ -130,7 +144,7 @@ export function Marketplace() {
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         
-        {/* 1. MARKETPLACE GRID */}
+        {/* 1. MARKETPLACE GRID (Default View) */}
         {currentView === 'marketplace' && (
           <div>
             <div className="mb-8">
@@ -157,17 +171,24 @@ export function Marketplace() {
           />
         )}
 
-        {/* 3. AGENT DASHBOARD */}
-        {currentView === 'agent-dashboard' && (
-          <AgentDashboard />
+        {/* --- DYNAMIC DASHBOARDS --- */}
+        
+        {/* 3. SUPER ADMIN DASHBOARD */}
+        {currentView === 'superadmin-dashboard' && (
+          <SuperAdminDashboard user={user} />
         )}
 
-        {/* 4. ADMIN DASHBOARD (Updated) */}
+        {/* 4. ADMIN DASHBOARD */}
         {currentView === 'admin-dashboard' && (
           <AdminDashboard user={user} />
         )}
 
-        {/* 5. PROFILE */}
+        {/* 5. AGENT DASHBOARD */}
+        {currentView === 'agent-dashboard' && (
+          <AgentDashboard />
+        )}
+
+        {/* 6. PROFILE (Handles Dashboard Navigation) */}
         {currentView === 'profile' && (
           <Profile 
             isLoggedIn={isLoggedIn}
@@ -182,7 +203,7 @@ export function Marketplace() {
           />
         )}
 
-        {/* 6. SHOPPING CART */}
+        {/* 7. SHOPPING CART */}
         {currentView === 'cart' && (
           <ShoppingCartView 
             cartItems={cartItems}
@@ -193,7 +214,7 @@ export function Marketplace() {
           />
         )}
 
-        {/* 7. CHECKOUT */}
+        {/* 8. CHECKOUT */}
         {currentView === 'checkout' && (
           <Checkout 
             cartItems={cartItems}
@@ -205,7 +226,7 @@ export function Marketplace() {
           />
         )}
 
-        {/* 8. FAVORITES */}
+        {/* 9. FAVORITES */}
         {currentView === 'favorites' && (
           <Favorites 
             favorites={favorites}
@@ -215,7 +236,7 @@ export function Marketplace() {
           />
         )}
 
-        {/* 9. OTHER VIEWS */}
+        {/* 10. UTILITY VIEWS */}
         {currentView === 'swap' && <SwapInterface />}
         {currentView === 'chat' && <AiChatBot />}
         {currentView === 'help-center' && <HelpCenter onBack={() => setCurrentView('marketplace')} />}

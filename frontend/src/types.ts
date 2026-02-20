@@ -6,8 +6,8 @@ export interface Product {
   quantity: number;
   unit: string;
   quality: string;
-  ask_price: number;     // Price from Farmer
-  listing_price?: number; // Final price from Admin
+  ask_price: number;
+  listing_price?: number;
   description: string;
   image_url?: string;
   status: 'pending' | 'approved' | 'rejected' | 'sold';
@@ -19,7 +19,6 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
-// Added 'agent-dashboard' and 'admin-dashboard' to the View type
 export type View = 
   | 'marketplace' 
   | 'swap' 
@@ -31,6 +30,7 @@ export type View =
   | 'profile' 
   | 'agent-dashboard' 
   | 'admin-dashboard' 
+  | 'superadmin-dashboard' // <--- NEW
   | 'help-center' 
   | 'terms' 
   | 'privacy' 
