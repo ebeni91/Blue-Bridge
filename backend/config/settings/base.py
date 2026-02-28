@@ -114,5 +114,5 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Blue Bridge Platform",
     "welcome_sign": "Welcome to the Blue Bridge Control Center",
     "copyright": "Blue Bridge Ltd",
-    "show_ui_builder": True, # This gives you a magic button to change colors directly in the browser!
+    # "show_ui_builder": True, # This gives you a magic button to change colors directly in the browser!
 }

@@ -1,9 +1,15 @@
 from rest_framework import viewsets, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from ..models import OrderRequest
-from ..serializers import OrderRequestSerializer
+from ..models import OrderRequest, ProductCategory
+from ..serializers import OrderRequestSerializer, ProductCategorySerializer
 from ..services import MatchingEngineService
 
+class ProductCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """Allows anyone (even logged out Next.js visitors) to see available crops"""
+    queryset = ProductCategory.objects.all()
+    serializer_class = ProductCategorySerializer
+    permission_classes = [AllowAny]
 class OrderRequestViewSet(viewsets.ModelViewSet):
     serializer_class = OrderRequestSerializer
     
