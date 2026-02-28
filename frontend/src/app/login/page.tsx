@@ -41,25 +41,20 @@ export default function LoginPage() {
       document.cookie = `userRole=${userRole}; path=/; max-age=86400; SameSite=Lax`;
 
       // 5. HYBRID ROUTING LOGIC: Detect host and redirect
-      const host = window.location.host;
+     if (typeof window !== 'undefined') {
+        const host = window.location.host;
 
-      if (host.startsWith('admin.')) {
-        // Logged in via admin.bluebridge.test
-        router.push('/admin');
-      } else if (host.startsWith('driver.')) {
-        // Logged in via driver.bluebridge.test
-        router.push('/driver');
-      } else if (host.startsWith('agent.')) {
-        // Logged in via agent.bluebridge.test
-        router.push('/agent');
-      } else {
-        // Universal fallback for the main marketplace domain
-        if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        if (host.startsWith('admin.')) {
           router.push('/admin');
-        } else if (userRole === 'DRIVER') {
+        } else if (host.startsWith('driver.')) {
           router.push('/driver');
+        } else if (host.startsWith('agent.')) {
+          router.push('/agent');
         } else {
-          router.push('/');
+          // Universal fallback
+          if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') router.push('/admin');
+          else if (userRole === 'DRIVER') router.push('/driver');
+          else router.push('/');
         }
       }
 
@@ -82,7 +77,7 @@ export default function LoginPage() {
           Blue Bridge Platform
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Dedicated login for {window.location.host.split('.')[0]} portal
+          Dedicated login for {typeof window !== 'undefined' ? window.location.host.split('.')[0] : 'Blue Bridge'} portal
         </p>
       </div>
 

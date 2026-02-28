@@ -4,19 +4,17 @@ import Link from 'next/link';
 // Fetch data on the server side
 async function getProducts() {
   try {
-    // Notice we use the standard axios here, not the authenticated one, 
-    // because this endpoint is public
-    const res = await fetch('http://localhost:8000/api/marketplace/categories/', {
-      next: { revalidate: 3600 } // Cache the response for 1 hour to save backend load
+    const res = await fetch('http://backend:8000/api/marketplace/categories/', {
+      next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error('Failed to fetch data');
     return res.json();
   } catch (error) {
-    console.error(error);
+    // Silently return empty array during Docker build if backend is unreachable
+    console.log("Skipping initial fetch during build phase.");
     return [];
   }
 }
-
 export default async function MarketplacePage() {
   const products = await getProducts();
 
