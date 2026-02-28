@@ -29,6 +29,7 @@ services:
       - DATABASE_URL=postgres://bluebridge_user:${DB_PASSWORD:-securepassword123}@db:5432/bluebridge_db
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DEBUG=False
+      - DB_PASSWORD=${DB_PASSWORD:-securepassword123}
     depends_on:
       db:
         condition: service_healthy

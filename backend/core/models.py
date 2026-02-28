@@ -26,7 +26,7 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} - {self.role}"
 
-class FarmerProfile(models.BaseModel):
+class FarmerProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='farmer_profile')
     region = models.CharField(max_length=100, db_index=True)
