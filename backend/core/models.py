@@ -27,11 +27,16 @@ class User(AbstractUser):
         return f"{self.username} - {self.role}"
 
 class FarmerProfile(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='farmer_profile')
-    region = models.CharField(max_length=100, db_index=True)
-    trust_score = models.DecimalField(max_digits=5, decimal_places=2, default=50.00) # Increases/decreases based on quality [cite: 9]
-    is_active = models.BooleanField(default=True)
+    region = models.CharField(max_length=100)
+    
+    # NEW FIELDS ADDED FOR AGENT ONBOARDING
+    primary_product = models.CharField(max_length=100, default="Unknown", help_text="e.g. White Teff, Wheat")
+    harvest_season = models.CharField(max_length=100, default="Meher", help_text="e.g. Meher, Belg, Irrigation")
+    
+    trust_score = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Farmer: {self.user.username} (Score: {self.trust_score})"
+        return f"Farmer {self.user.username} - {self.region}"

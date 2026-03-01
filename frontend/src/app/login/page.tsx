@@ -36,26 +36,19 @@ export default function LoginPage() {
       localStorage.setItem('access', data.access);
       localStorage.setItem('refresh', data.refresh);
 
-      // 4. Set cookies for middleware-based subdomain protection
+      // 4. Set cookies for middleware-based protection
       document.cookie = `accessToken=${data.access}; path=/; max-age=86400; SameSite=Lax`;
       document.cookie = `userRole=${userRole}; path=/; max-age=86400; SameSite=Lax`;
 
-      // 5. HYBRID ROUTING LOGIC: Detect host and redirect
-     if (typeof window !== 'undefined') {
-        const host = window.location.host;
-
-        if (host.startsWith('admin.')) {
-          router.push('/admin');
-        } else if (host.startsWith('driver.')) {
-          router.push('/driver');
-        } else if (host.startsWith('agent.')) {
-          router.push('/agent');
-        } else {
-          // Universal fallback
-          if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') router.push('/admin');
-          else if (userRole === 'DRIVER') router.push('/driver');
-          else router.push('/');
-        }
+      // 5. UNIVERSAL ROUTING LOGIC: Route purely based on Role
+      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        router.push('/admin');
+      } else if (userRole === 'AGENT') {
+        router.push('/agent');
+      } else if (userRole === 'DRIVER') {
+        router.push('/driver');
+      } else {
+        router.push('/'); // Normal buyers go to the marketplace
       }
 
     } catch (err: any) {
@@ -77,7 +70,7 @@ export default function LoginPage() {
           Blue Bridge Platform
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Dedicated login for {typeof window !== 'undefined' ? window.location.host.split('.')[0] : 'Blue Bridge'} portal
+          Sign in to access your dashboard
         </p>
       </div>
 

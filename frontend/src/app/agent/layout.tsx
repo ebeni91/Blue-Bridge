@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+// import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   ClipboardCheck, 
@@ -15,7 +16,21 @@ import {
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+
+const handleLogout = () => {
+    // 1. Clear local storage
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    
+    // 2. Destroy the cookies (set expiration to the past)
+    document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    // 3. Kick them back to login
+    router.push('/login');
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/agent', icon: LayoutDashboard },
@@ -47,7 +62,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="flex items-center w-full px-3 py-3 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+          <button 
+            onClick={handleLogout} // <-- Attach it here!
+            className="flex items-center w-full px-3 py-3 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+          >
             <LogOut className="h-5 w-5" />
             {isSidebarOpen && <span className="ml-3 font-medium">Logout</span>}
           </button>

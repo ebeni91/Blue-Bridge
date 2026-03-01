@@ -3,52 +3,51 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
-  const host = request.headers.get('host') || '';
   
-  // 1. Get the token from cookies
+  // 1. Get the token and role from cookies
   const token = request.cookies.get('accessToken')?.value;
   const role = request.cookies.get('userRole')?.value;
 
-  // 2. Detect which "Front Door" they used
-  const isAdminSubdomain = host.startsWith('admin.');
-  const isDriverSubdomain = host.startsWith('driver.');
-  const isAgentSubdomain = host.startsWith('agent.');
+  // 2. Define which paths require protection
+  const isProtectedPath = url.pathname.startsWith('/admin') || 
+                          url.pathname.startsWith('/agent') || 
+                          url.pathname.startsWith('/driver');
 
-  // 3. AUTHENTICATION REDIRECTS (Not logged in)
-  if ((isAdminSubdomain || isDriverSubdomain || isAgentSubdomain) && !token) {
-    // If they are on the login page already, don't trap them in a loop!
-    if (url.pathname.startsWith('/login')) {
-        return NextResponse.next();
-    }
-    return NextResponse.rewrite(new URL('/login', request.url));
+  // 3. Not logged in? Redirect to the universal login page
+  if (isProtectedPath && !token) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 4. ROLE-BASED ACCESS (Logged in)
+  // 4. Logged in? Enforce Role-Based Access Control
   if (token) {
-    // If on admin subdomain but not an admin, block access
-    if (isAdminSubdomain && !['ADMIN', 'SUPER_ADMIN'].includes(role || '')) {
-      return NextResponse.rewrite(new URL('/unauthorized', request.url));
+    // Prevent non-admins from accessing /admin
+    if (url.pathname.startsWith('/admin') && !['ADMIN', 'SUPER_ADMIN'].includes(role || '')) {
+      return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // If on driver subdomain but not a driver, block access
-    if (isDriverSubdomain && role !== 'DRIVER') {
-      return NextResponse.rewrite(new URL('/unauthorized', request.url));
+    // Prevent non-agents from accessing /agent
+    if (url.pathname.startsWith('/agent') && role !== 'AGENT') {
+      return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // INTERNAL REWRITING: Map the root of the subdomain to the actual dashboard page
-    if (isAdminSubdomain && url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/admin', request.url));
+    // Prevent non-drivers from accessing /driver
+    if (url.pathname.startsWith('/driver') && role !== 'DRIVER') {
+      return NextResponse.redirect(new URL('/', request.url));
     }
-    
-    if (isDriverSubdomain && url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/driver', request.url));
+
+    // Smart Redirect: If a logged-in user visits the login page, send them to their dashboard
+    if (url.pathname === '/login') {
+      if (['ADMIN', 'SUPER_ADMIN'].includes(role || '')) return NextResponse.redirect(new URL('/admin', request.url));
+      if (role === 'AGENT') return NextResponse.redirect(new URL('/agent', request.url));
+      if (role === 'DRIVER') return NextResponse.redirect(new URL('/driver', request.url));
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
 
   return NextResponse.next();
 }
 
-// Ensure the middleware runs on the homepage ('/') so it catches the subdomain root!
+// Only run middleware on these specific paths to keep the app fast
 export const config = {
-  matcher: ['/', '/admin/:path*', '/driver/:path*', '/agent/:path*', '/login'],
+  matcher: ['/admin/:path*', '/agent/:path*', '/driver/:path*', '/login'],
 };
