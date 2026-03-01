@@ -40,3 +40,19 @@ class FarmerProfile(models.Model):
 
     def __str__(self):
         return f"Farmer {self.user.username} - {self.region}"
+
+
+class BuyerProfile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='buyer_profile')
+    
+    # New B2B Fields from your frontend form
+    company_name = models.CharField(max_length=255)
+    business_type = models.CharField(max_length=100)
+    delivery_address = models.TextField()
+    
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Buyer: {self.company_name} ({self.user.username})"

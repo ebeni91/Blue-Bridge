@@ -1,7 +1,7 @@
 from rest_framework import viewsets, mixins
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import User, FarmerProfile
-from .serializers import UserSerializer, FarmerProfileSerializer
+from .models import User, FarmerProfile, BuyerProfile
+from .serializers import UserSerializer, FarmerProfileSerializer, BuyerRegistrationSerializer
 
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
@@ -9,8 +9,19 @@ class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     Notice we use AllowAny here because they don't have a token yet.
     """
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = BuyerRegistrationSerializer
     permission_classes = [AllowAny] 
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        return Response({
+            "message": "Buyer account created successfully.",
+            "user_id": user.id,
+            "email": user.email
+        }, status=status.HTTP_201_CREATED)
 
 class FarmerProfileViewSet(viewsets.ModelViewSet):
     """
