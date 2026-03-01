@@ -1,8 +1,16 @@
 # --- Stage 1: Install dependencies ---
 FROM node:20-alpine AS deps
 WORKDIR /app
+# COPY package.json package-lock.json* ./
+# RUN npm install
+
 COPY package.json package-lock.json* ./
-RUN npm install
+# Increase timeouts to 10 minutes, retry 5 times, and use a more stable registry
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 600000 \
+    && npm install --no-audit --no-fund
+
 
 # --- Stage 2: Build the application ---
 FROM node:20-alpine AS builder
