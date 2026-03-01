@@ -2,25 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Leaf, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Building2, 
-  Briefcase, 
-  Lock, 
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  Loader2
-} from 'lucide-react';
+import { Leaf, User, Mail, Phone, MapPin, Building2, Briefcase, Lock, ArrowRight, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -35,9 +23,8 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(''); // Clear any previous errors
+    setError('');
 
-    // 1. Frontend Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match. Please try again.');
       setLoading(false);
@@ -45,10 +32,9 @@ export default function RegisterPage() {
     }
 
     try {
-      // 2. Format the payload to match Django's BuyerRegistrationSerializer
       const payload = {
         email: formData.email,
-        phone_number: formData.phone, // Maps to Django's field name
+        phone_number: formData.phone,
         password: formData.password,
         fullName: formData.fullName,
         companyName: formData.companyName,
@@ -56,8 +42,6 @@ export default function RegisterPage() {
         address: formData.address,
       };
 
-      // 3. Make the actual API request
-      // NEW CODE
       const response = await fetch('http://localhost:8000/api/core/register/', {
         method: 'POST',
         headers: {
@@ -69,22 +53,16 @@ export default function RegisterPage() {
 
       const data = await response.json();
 
-      // 4. Catch Backend Errors (e.g., email already exists)
       if (!response.ok) {
-        // Look for specific field errors from Django (like duplicate phone or email)
         let errorMessage = 'Registration failed. Please check your details.';
-        
-        if (data.phone_number) errorMessage = `Phone Number: ${data.phone_number[0]}`;
-        else if (data.email) errorMessage = `Email: ${data.email[0]}`;
-        else if (data.username) errorMessage = `Username: ${data.username[0]}`;
+        if (data.email) errorMessage = `Email: ${data.email[0]}`;
+        else if (data.phone_number) errorMessage = `Phone: ${data.phone_number[0]}`;
         else if (data.detail) errorMessage = data.detail;
-        // If it's a complex object, stringify it so we can read it
-        else if (typeof data === 'object') errorMessage = Object.values(data).join(' | ');
-
+        else if (typeof data === 'object') errorMessage = Object.values(data)[0] as string;
+        
         throw new Error(errorMessage);
       }
 
-      // 5. Trigger the Success UI!
       setSuccess(true);
 
     } catch (err: any) {
@@ -113,10 +91,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
-      
-      {/* --- LEFT SIDE: Brand & Trust Signals (Hidden on mobile) --- */}
       <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-green-700 via-green-600 to-emerald-900 relative overflow-hidden flex-col justify-between p-12">
-        {/* Abstract Watermarks */}
         <Leaf className="absolute -bottom-24 -left-24 w-[500px] h-[500px] text-white opacity-[0.05] transform rotate-12 pointer-events-none" />
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] opacity-[0.05] pointer-events-none"></div>
 
@@ -125,9 +100,7 @@ export default function RegisterPage() {
             <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg transform rotate-3">
               <Leaf className="h-6 w-6 text-green-600 -rotate-3" />
             </div>
-            <span className="text-2xl font-extrabold text-white tracking-tight">
-              BlueBridge
-            </span>
+            <span className="text-2xl font-extrabold text-white tracking-tight">BlueBridge</span>
           </Link>
 
           <h1 className="text-4xl font-extrabold text-white leading-tight mb-6">
@@ -157,37 +130,23 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: Registration Form --- */}
       <div className="w-full lg:w-7/12 flex items-center justify-center p-8 sm:p-12 lg:p-16 overflow-y-auto">
         <div className="max-w-xl w-full">
-          
-          {/* Mobile Logo (Only shows on small screens) */}
-          <Link href="/" className="flex lg:hidden items-center gap-3 mb-8">
-            <div className="h-10 w-10 bg-green-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-3">
-              <Leaf className="h-6 w-6 text-white -rotate-3" />
-            </div>
-            <span className="text-2xl font-extrabold text-gray-900 tracking-tight">BlueBridge</span>
-          </Link>
-
           <div className="mb-10">
             <h2 className="text-3xl font-extrabold text-gray-900">Create Buyer Account</h2>
             <p className="text-gray-500 mt-2">Already have an account? <Link href="/login" className="text-green-600 font-bold hover:underline">Log in here</Link></p>
-          
-          {error && (
+            
+            {error && (
               <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center text-red-700 text-sm font-bold">
                 <span className="h-2 w-2 bg-red-500 rounded-full mr-3"></span>
                 {error}
               </div>
             )}
-
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            
-            {/* 1. Personal Information */}
             <div className="space-y-5">
               <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">1. Personal Contact</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Full Name</label>
@@ -214,10 +173,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 2. Business Information */}
             <div className="space-y-5 pt-2">
               <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">2. Business Profile</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Company / Business Name</label>
@@ -249,10 +206,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 3. Security */}
             <div className="space-y-5 pt-2">
               <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">3. Security</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Password</label>
@@ -271,20 +226,11 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-6">
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full py-4 bg-gray-900 text-white font-extrabold rounded-xl hover:bg-green-600 transition-colors shadow-lg flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={loading} className="w-full py-4 bg-gray-900 text-white font-extrabold rounded-xl hover:bg-green-600 transition-colors shadow-lg flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'Create Buyer Account'}
               </button>
-              <p className="text-center text-xs text-gray-500 mt-4 font-medium">
-                By clicking "Create Buyer Account", you agree to the Blue Bridge <span className="text-green-600 cursor-pointer">Terms of Service</span> and <span className="text-green-600 cursor-pointer">Privacy Policy</span>.
-              </p>
             </div>
-
           </form>
         </div>
       </div>
