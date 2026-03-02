@@ -18,7 +18,7 @@ class CustomTokenView(TokenObtainPairView):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
+    path('api/core/', include('core.urls')),
     # --- Authentication Endpoints ---
     # Now uses our Custom view that includes the role
     path('api/auth/token/', CustomTokenView.as_view(), name='token_obtain_pair'),

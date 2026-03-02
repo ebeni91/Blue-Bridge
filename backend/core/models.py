@@ -1,5 +1,5 @@
 import uuid
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 class User(AbstractUser):
@@ -46,3 +46,68 @@ class BuyerProfile(models.Model):
 
     def __str__(self):
         return f"Buyer: {self.company_name} ({self.user.username})"
+    
+
+
+
+
+# ==========================================
+# CUSTOM MANAGERS FOR ADMIN SEPARATION
+# ==========================================
+class AdminManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role__in=['SUPER_ADMIN', 'ADMIN'])
+
+class AgentManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='AGENT')
+
+class DriverManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='DRIVER')
+
+class BuyerManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='BUYER')
+
+class FarmerManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='FARMER')
+
+# ==========================================
+# PROXY MODELS (Virtual Admin Tables)
+# ==========================================
+class AdminUser(User):
+    objects = AdminManager()
+    class Meta:
+        proxy = True
+        verbose_name = 'Admin'
+        verbose_name_plural = '1. Admins' # Numbers used to force ordering in the Admin Sidebar
+
+class AgentUser(User):
+    objects = AgentManager()
+    class Meta:
+        proxy = True
+        verbose_name = 'Agent'
+        verbose_name_plural = '2. Agents'
+
+class DriverUser(User):
+    objects = DriverManager()
+    class Meta:
+        proxy = True
+        verbose_name = 'Driver'
+        verbose_name_plural = '3. Drivers'
+
+class BuyerUser(User):
+    objects = BuyerManager()
+    class Meta:
+        proxy = True
+        verbose_name = 'Buyer'
+        verbose_name_plural = '4. Buyers'
+
+class FarmerUser(User):
+    objects = FarmerManager()
+    class Meta:
+        proxy = True
+        verbose_name = 'Farmer'
+        verbose_name_plural = '5. Farmers'

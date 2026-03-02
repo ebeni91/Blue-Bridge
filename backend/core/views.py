@@ -1,3 +1,4 @@
+from rest_framework.views import APIView
 from rest_framework import viewsets, mixins, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -29,3 +30,37 @@ class FarmerProfileViewSet(viewsets.ModelViewSet):
         if user.role in ['AGENT', 'ADMIN', 'SUPER_ADMIN']:
             return FarmerProfile.objects.all()
         return FarmerProfile.objects.filter(user=user)
+
+
+
+class BuyerDashboardView(APIView):
+    """
+    Returns the dynamic dashboard data specifically for the logged-in buyer.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        
+        # 1. Security check: Ensure they are actually a BUYER
+        if user.role != 'BUYER':
+            return Response({"error": "Unauthorized view"}, status=403)
+            
+        # 2. Grab their specific profile from the database
+        try:
+            profile = BuyerProfile.objects.get(user=user)
+        except BuyerProfile.DoesNotExist:
+            return Response({"error": "Buyer profile missing"}, status=404)
+
+        # 3. Return their actual data (We will replace the 0s with real database queries later once we build the SupplyRequest tables!)
+        return Response({
+            "full_name": f"{user.first_name} {user.last_name}",
+            "company_name": profile.company_name,
+            "business_type": profile.business_type,
+            "stats": {
+                "pending_requests": 0, 
+                "active_deliveries": 0,
+                "completed_volume": "0T"
+            },
+            "recent_requests": [] 
+        })
