@@ -1,5 +1,5 @@
 'use client';
-
+import { useEffect } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { 
@@ -13,7 +13,10 @@ import {
   X, 
   ArrowRight,
   ShieldCheck,
-  Plus
+  Plus,
+  User,
+  LogOut,
+  LayoutDashboard
 } from 'lucide-react';
 
 // Define our types
@@ -39,6 +42,36 @@ export default function MarketplacePage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  // NEW STATE: Check if logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    const role = localStorage.getItem('userRole');
+    
+    // Only recognize the session for checkout if they are a BUYER
+    if (token && role === 'BUYER') {
+      setIsLoggedIn(true);
+      // FETCH PROFILE DATA FOR THE DROPDOWN
+      fetch('http://localhost:8000/api/core/buyer/dashboard/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setProfileData(data))
+      .catch(err => console.error("Failed to load profile for navbar", err));
+    }
+  }, []);
+
+  // NEW LOGOUT FUNCTION
+  const handleLogout = () => {
+    localStorage.clear();
+    document.cookie.split(";").forEach((c) => { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    setIsLoggedIn(false);
+    setIsProfileOpen(false);
+  };
 
   // Mock Data: Platform-listed commodities
   const products: Product[] = [
@@ -68,9 +101,15 @@ export default function MarketplacePage() {
     setCart(cart.filter(item => item.product.id !== id));
   };
 
-  const handleCheckout = () => {
+ const handleCheckout = () => {
     setIsCartOpen(false);
-    setIsAuthModalOpen(true); // Trigger Auth Gate
+    if (isLoggedIn) {
+      // If they are logged in, route them straight to the dashboard to complete the order!
+      window.location.href = '/buyer/dashboard'; 
+    } else {
+      // If not logged in, show the Auth Gate popup
+      setIsAuthModalOpen(true); 
+    }
   };
 
   const cartTotal = cart.reduce((total, item) => total + (item.product.pricePerKg * item.quantityKg), 0);
@@ -91,7 +130,7 @@ export default function MarketplacePage() {
               </span>
             </Link>
 
-            {/* Cart Button */}
+            {/* Cart Button
             <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-3 bg-gray-50 rounded-full hover:bg-green-50 transition-colors text-gray-700 hover:text-green-700 border border-gray-200 hover:border-green-200"
@@ -102,7 +141,79 @@ export default function MarketplacePage() {
                   {cart.length}
                 </span>
               )}
-            </button>
+            </button> */}
+
+
+{/* Profile & Cart Buttons */}
+            <div className="flex items-center space-x-3">
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="h-11 w-11 bg-green-50 border border-green-200 rounded-full flex items-center justify-center text-green-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm group"
+                  >
+                    <User className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  </button>
+
+                  {/* --- POP-UP PROFILE MENU --- */}
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="p-4 border-b border-gray-50 bg-gray-50/50">
+                        {/* DYNAMIC NAMES ADDED HERE */}
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {profileData ? profileData.company_name : 'Verified Buyer'}
+                        </p>
+                        <p className="text-xs font-medium text-gray-500 truncate">
+                          {profileData ? profileData.full_name : 'Manage your supply chain'}
+                        </p>
+                      </div>
+                      <div className="p-2">
+                        <Link 
+                          href="/buyer/dashboard" 
+                          target="_blank"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center px-4 py-3 text-sm font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition-colors"
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-3" />
+                          Command Center
+                        </Link>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <LogOut className="h-4 w-4 mr-3" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link href="/login" className="hidden sm:flex px-4 py-2 text-sm font-bold text-gray-600 hover:text-green-600 transition-colors">
+                  Sign In
+                </Link>
+              )}
+
+              {/* Existing Cart Button */}
+              <button 
+                onClick={() => setIsCartOpen(true)}
+                className="relative h-11 w-11 flex items-center justify-center bg-gray-50 rounded-full hover:bg-green-50 transition-colors text-gray-700 hover:text-green-700 border border-gray-200 hover:border-green-200"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-sm">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+
+
+
+
+
+            
           </div>
         </div>
       </nav>

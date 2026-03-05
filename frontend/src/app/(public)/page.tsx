@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Leaf, 
@@ -9,10 +10,62 @@ import {
   ShoppingBag,
   TrendingUp,
   MapPin,
-  Award
+  Award,
+  BarChart3,
+  Globe2,
+  Star,
+  User,
+  LogOut,
+  LayoutDashboard
 } from 'lucide-react';
 
 export default function LandingPage() {
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [userRole, setUserRole] = useState<string | null>(null);
+const [isProfileOpen, setIsProfileOpen] = useState(false);
+const [profileData, setProfileData] = useState<any>(null);
+  // Check auth state on mount safely
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    const role = localStorage.getItem('userRole');
+   // STRICT ROLE CHECK: Only change the public UI if they are a BUYER
+    if (token && role === 'BUYER') {
+      setIsLoggedIn(true);
+      // FETCH PROFILE DATA FOR THE DROPDOWN
+      fetch('http://localhost:8000/api/core/buyer/dashboard/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setProfileData(data))
+      .catch(err => console.error("Failed to load profile for navbar", err));
+    }
+  }, []);
+
+  // NEW LOGOUT FUNCTION
+  const handleLogout = () => {
+    localStorage.clear();
+    document.cookie.split(";").forEach((c) => { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    setIsLoggedIn(false);
+    setIsProfileOpen(false);
+  };
+
+
+
+  // Determine where "My Profile" should link based on role
+  const getProfileLink = () => {
+    switch(userRole) {
+      case 'BUYER': return '/buyer/profile';
+      case 'AGENT': return '/agent';
+      case 'ADMIN': return '/admin';
+      case 'DRIVER': return '/driver';
+      default: return '/';
+    }
+  };
+
+
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       
@@ -44,21 +97,63 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Login & Sign Up Area */}
+{/* Login, Sign Up & Profile Area */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <Link 
-                href="/login" 
-                className="hidden sm:block px-4 py-2.5 text-green-800 font-bold hover:text-green-600 transition-colors"
-              >
-                Log In
-              </Link>
-              <Link 
-                href="/login" 
-                className="px-6 py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-sm hover:shadow active:scale-95"
-              >
-                Sign In
-              </Link>
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="h-11 w-11 bg-green-50 border border-green-200 rounded-full flex items-center justify-center text-green-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm group"
+                  >
+                    <User className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  </button>
+
+                  {/* --- POP-UP PROFILE MENU --- */}
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                     <div className="p-4 border-b border-gray-50 bg-gray-50/50">
+                        {/* DYNAMIC NAMES ADDED HERE */}
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {profileData ? profileData.company_name : 'Verified Buyer'}
+                        </p>
+                        <p className="text-xs font-medium text-gray-500 truncate">
+                          {profileData ? profileData.full_name : 'Manage your supply chain'}
+                        </p>
+                      </div>
+                      <div className="p-2">
+                        <Link 
+                          href="/buyer/dashboard" 
+                          target="_blank"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center px-4 py-3 text-sm font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition-colors"
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-3" />
+                          Command Center
+                        </Link>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <LogOut className="h-4 w-4 mr-3" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" className="hidden sm:block px-4 py-2.5 text-green-800 font-bold hover:text-green-600 transition-colors">
+                    Log In
+                  </Link>
+                  <Link href="/register" className="px-6 py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-sm hover:shadow active:scale-95">
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
+
+
           </div>
         </div>
       </nav>
@@ -107,7 +202,8 @@ export default function LandingPage() {
                 
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                   <Link 
-                    href="/login" 
+                    // IF LOGGED IN: go to marketplace. IF NOT: go to login
+                    href={isLoggedIn ? "/marketplace" : "/login"} 
                     className="px-8 py-4 bg-white text-green-800 font-extrabold rounded-xl hover:bg-gray-50 transition-all shadow-xl hover:shadow-2xl active:scale-95 flex items-center justify-center"
                   >
                     Post an Order

@@ -54,9 +54,13 @@ class BuyerDashboardView(APIView):
 
         # 3. Return their actual data (We will replace the 0s with real database queries later once we build the SupplyRequest tables!)
         return Response({
-            "full_name": f"{user.first_name} {user.last_name}",
+            "full_name": f"{user.first_name} {user.last_name}".strip() or user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
             "company_name": profile.company_name,
             "business_type": profile.business_type,
+            "delivery_address": profile.delivery_address,
+            "is_verified": profile.is_verified,
             "stats": {
                 "pending_requests": 0, 
                 "active_deliveries": 0,

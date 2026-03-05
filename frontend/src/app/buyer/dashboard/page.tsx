@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Leaf, LayoutDashboard, ShoppingBag, Store, Settings, LogOut, Bell, 
-  Search, Clock, CheckCircle2, Truck, ChevronRight, Loader2
+  Search, Clock, CheckCircle2, Truck, ChevronRight, Loader2,
+  User, Building2, MapPin, Phone, Mail, ShieldCheck, Briefcase
 } from 'lucide-react';
 
 export default function BuyerDashboard() {
@@ -142,6 +143,83 @@ export default function BuyerDashboard() {
           </div>
 
           {/* Metrics Grid */}
+
+          {/* Business Profile Information Card */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+              <Building2 className="w-48 h-48" />
+            </div>
+            
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <h2 className="text-xl font-extrabold text-gray-900 flex items-center">
+                <User className="h-6 w-6 mr-3 text-green-600" />
+                Account Information
+              </h2>
+              {dashboardData?.is_verified && (
+                <span className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg flex items-center border border-green-100">
+                  <ShieldCheck className="h-4 w-4 mr-1.5" /> Verified Status
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 relative z-10">
+              <div className="flex items-start">
+                <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 shrink-0">
+                  <Building2 className="h-5 w-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Company Name</p>
+                  <p className="font-bold text-gray-900">{dashboardData?.company_name}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 shrink-0">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Email Address</p>
+                  <p className="font-bold text-gray-900">{dashboardData?.email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 shrink-0">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Phone Number</p>
+                  <p className="font-bold text-gray-900">{dashboardData?.phone_number || 'Not provided'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 shrink-0">
+                  <Briefcase className="h-5 w-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Business Size</p>
+                  <p className="font-bold text-gray-900">{dashboardData?.business_type}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start lg:col-span-2">
+                <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 shrink-0">
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Registered Delivery Address</p>
+                  <p className="font-bold text-gray-900">{dashboardData?.delivery_address}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+              
+
+
+
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-6 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform"><Clock className="h-16 w-16 text-amber-600" /></div>

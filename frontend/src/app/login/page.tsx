@@ -51,15 +51,18 @@ export default function LoginPage() {
       document.cookie = `userRole=${userRole}; path=/`; 
       document.cookie = `token=${data.access}; path=/`;
 
-      // 4. UNIFIED ROLE-BASED ROUTING
+     // 4. UNIFIED ROLE-BASED ROUTING
       if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
-        router.push('/admin');
+        window.open('/admin', '_blank'); // Open Admin in new tab
+        router.push('/'); // Send current tab back to the public homepage
       } else if (userRole === 'AGENT') {
-        router.push('/agent');
+        window.open('/agent', '_blank'); // Open Agent in new tab
+        router.push('/'); 
       } else if (userRole === 'DRIVER') {
-        router.push('/driver');
+        window.open('/driver', '_blank'); // Open Driver in new tab
+        router.push('/'); 
       } else if (userRole === 'BUYER') {
-        router.push('/buyer/dashboard');
+        router.push('/'); // Buyers stay in the same tab
       } else {
         router.push('/'); 
       }
