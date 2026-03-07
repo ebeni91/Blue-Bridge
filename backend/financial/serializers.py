@@ -1,10 +1,15 @@
 from rest_framework import serializers
-from .models import EscrowAccount
+from .models import DeliveryJob, WarehouseReceipt
 
-class EscrowAccountSerializer(serializers.ModelSerializer):
+class DeliveryJobSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EscrowAccount
-        fields = ['id', 'order', 'amount', 'status', 'locked_at', 'released_at']
-        # Make absolutely everything read-only for standard API views.
-        # Escrow updates should only happen via secure backend service functions.
-        read_only_fields = ['id', 'order', 'amount', 'status', 'locked_at', 'released_at']
+        model = DeliveryJob
+        fields = ['id', 'order', 'driver', 'status', 'tracking_number']
+        read_only_fields = ['id', 'order', 'status', 'tracking_number']
+
+class WarehouseReceiptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WarehouseReceipt
+        # Updated to use 'supply_request'
+        fields = ['id', 'supply_request', 'grade', 'received_at'] 
+        read_only_fields = ['id', 'received_at']

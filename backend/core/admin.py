@@ -15,6 +15,10 @@ class CustomUserAdmin(UserAdmin):
         ('Blue Bridge Details', {'fields': ('role', 'phone_number')}),
     )
 
+@admin.register(User)
+class MasterUserAdmin(CustomUserAdmin):
+    pass
+
 # Register the Proxy Models
 @admin.register(AdminUser)
 class AdminUserAdmin(CustomUserAdmin):

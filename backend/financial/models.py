@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from marketplace.models import OrderRequest
+from marketplace.models import SupplyRequest # <-- Updated to the new model!
 
 class EscrowAccount(models.Model):
     class EscrowStatus(models.TextChoices):
@@ -10,11 +10,11 @@ class EscrowAccount(models.Model):
         REFUNDED = 'REFUNDED', 'Refunded to Buyer'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order = models.OneToOneField(OrderRequest, on_delete=models.PROTECT, related_name='escrow')
+    order = models.OneToOneField(SupplyRequest, on_delete=models.PROTECT, related_name='escrow') # <-- Updated here
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=EscrowStatus.choices, default=EscrowStatus.PENDING)
     locked_at = models.DateTimeField(null=True, blank=True)
     released_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Escrow for Order {self.order.id} - {self.status}"
+        return f"Escrow for Request {self.order.id} - {self.status}"
