@@ -1,6 +1,6 @@
 'use client';
-import { useEffect } from 'react';
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Leaf, 
@@ -19,51 +19,65 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 
-// Define our types
-type Product = {
+// Define the shape of a product matching your Django Backend
+interface Product {
   id: string;
   name: string;
-  type: string;
-  region: string;
-  season: string;
-  pricePerKg: number;
-  minOrderKg: number;
-  rating: number;
-  availableTonnage: string;
-};
+  category_name: string;
+  description: string;
+  estimated_price_per_unit: string;
+  minimum_order_quantity: number;
+  unit_of_measure: string;
+}
 
-type CartItem = {
+interface CartItem {
   product: Product;
-  quantityKg: number;
-};
+  quantity: number;
+}
 
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  // NEW STATE: Check if logged in
+  
+  // Auth States
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+
+  // Real Django Products State
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
   useEffect(() => {
+    // 1. Fetch Real Products from Django
+    fetch('http://localhost:8000/api/marketplace/products/')
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data);
+        setLoadingProducts(false);
+      })
+      .catch(err => {
+        console.error("Failed to load products", err);
+        setLoadingProducts(false);
+      });
+
+    // 2. Auth Check & Profile Fetch
     const token = localStorage.getItem('accessToken');
     const role = localStorage.getItem('userRole');
     
-    // Only recognize the session for checkout if they are a BUYER
     if (token && role === 'BUYER') {
       setIsLoggedIn(true);
-      // FETCH PROFILE DATA FOR THE DROPDOWN
       fetch('http://localhost:8000/api/core/buyer/dashboard/', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
       .then(data => setProfileData(data))
-      .catch(err => console.error("Failed to load profile for navbar", err));
+      .catch(err => console.error("Failed to load profile", err));
     }
   }, []);
 
-  // NEW LOGOUT FUNCTION
   const handleLogout = () => {
     localStorage.clear();
     document.cookie.split(";").forEach((c) => { 
@@ -73,46 +87,59 @@ export default function MarketplacePage() {
     setIsProfileOpen(false);
   };
 
-  // Mock Data: Platform-listed commodities
-  const products: Product[] = [
-    { id: 'PRD-001', name: 'Premium White Teff (Magna)', type: 'Teff', region: 'East Shewa, Oromia', season: 'Meher (Main Harvest)', pricePerKg: 120, minOrderKg: 500, rating: 4.9, availableTonnage: '45 Tons' },
-    { id: 'PRD-002', name: 'Mixed Teff (Sergegna)', type: 'Teff', region: 'West Gojjam, Amhara', season: 'Meher (Main Harvest)', pricePerKg: 105, minOrderKg: 1000, rating: 4.8, availableTonnage: '120 Tons' },
-    { id: 'PRD-003', name: 'High-Yield Wheat', type: 'Wheat', region: 'Bale, Oromia', season: 'Belg (Short Harvest)', pricePerKg: 65, minOrderKg: 2000, rating: 4.7, availableTonnage: '300 Tons' },
-    { id: 'PRD-004', name: 'Organic Red Teff', type: 'Teff', region: 'North Shewa, Oromia', season: 'Meher (Main Harvest)', pricePerKg: 95, minOrderKg: 200, rating: 4.9, availableTonnage: '15 Tons' },
-    { id: 'PRD-005', name: 'White Maize', type: 'Maize', region: 'Jimma, Oromia', season: 'Meher (Main Harvest)', pricePerKg: 45, minOrderKg: 5000, rating: 4.6, availableTonnage: '500 Tons' },
-    { id: 'PRD-006', name: 'Export-Grade Sesame', type: 'Oilseed', region: 'Humera, Tigray', season: 'Meher (Main Harvest)', pricePerKg: 250, minOrderKg: 1000, rating: 4.9, availableTonnage: '80 Tons' },
-  ];
-
   const handleAddToCart = (product: Product) => {
-    // Check if already in cart
     if (cart.find(item => item.product.id === product.id)) {
       setIsCartOpen(true);
       return;
     }
-    setCart([...cart, { product, quantityKg: product.minOrderKg }]);
+    setCart([...cart, { product, quantity: product.minimum_order_quantity }]);
     setIsCartOpen(true);
   };
 
   const updateQuantity = (id: string, newQty: number) => {
-    setCart(cart.map(item => item.product.id === id ? { ...item, quantityKg: newQty } : item));
+    setCart(cart.map(item => item.product.id === id ? { ...item, quantity: newQty } : item));
   };
 
   const removeCartItem = (id: string) => {
     setCart(cart.filter(item => item.product.id !== id));
   };
 
- const handleCheckout = () => {
+  // Send Order to Django!
+  const handleCheckout = async () => {
     setIsCartOpen(false);
-    if (isLoggedIn) {
-      // If they are logged in, route them straight to the dashboard to complete the order!
-      window.location.href = '/buyer/dashboard'; 
-    } else {
-      // If not logged in, show the Auth Gate popup
+    if (!isLoggedIn) {
       setIsAuthModalOpen(true); 
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      for (const item of cart) {
+        await fetch('http://localhost:8000/api/marketplace/supply-requests/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            product: item.product.id,
+            quantity: item.quantity,
+            delivery_location: profileData?.delivery_address || 'Standard Delivery' 
+          })
+        });
+      }
+
+      setCart([]);
+      window.location.href = '/buyer/dashboard'; 
+
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      alert("There was an issue submitting your order. Please try again.");
     }
   };
 
-  const cartTotal = cart.reduce((total, item) => total + (item.product.pricePerKg * item.quantityKg), 0);
+  const cartTotal = cart.reduce((total, item) => total + (parseFloat(item.product.estimated_price_per_unit) * item.quantity), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-24 relative">
@@ -130,21 +157,7 @@ export default function MarketplacePage() {
               </span>
             </Link>
 
-            {/* Cart Button
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-3 bg-gray-50 rounded-full hover:bg-green-50 transition-colors text-gray-700 hover:text-green-700 border border-gray-200 hover:border-green-200"
-            >
-              <ShoppingCart className="h-6 w-6" />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-sm">
-                  {cart.length}
-                </span>
-              )}
-            </button> */}
-
-
-{/* Profile & Cart Buttons */}
+            {/* Profile & Cart Buttons */}
             <div className="flex items-center space-x-3">
               {isLoggedIn ? (
                 <div className="relative">
@@ -155,11 +168,10 @@ export default function MarketplacePage() {
                     <User className="h-5 w-5 group-hover:scale-110 transition-transform" />
                   </button>
 
-                  {/* --- POP-UP PROFILE MENU --- */}
+                  {/* POP-UP PROFILE MENU */}
                   {isProfileOpen && (
                     <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                       <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                        {/* DYNAMIC NAMES ADDED HERE */}
                         <p className="text-sm font-bold text-gray-900 truncate">
                           {profileData ? profileData.company_name : 'Verified Buyer'}
                         </p>
@@ -194,7 +206,7 @@ export default function MarketplacePage() {
                 </Link>
               )}
 
-              {/* Existing Cart Button */}
+              {/* Cart Button */}
               <button 
                 onClick={() => setIsCartOpen(true)}
                 className="relative h-11 w-11 flex items-center justify-center bg-gray-50 rounded-full hover:bg-green-50 transition-colors text-gray-700 hover:text-green-700 border border-gray-200 hover:border-green-200"
@@ -207,13 +219,6 @@ export default function MarketplacePage() {
                 )}
               </button>
             </div>
-
-
-
-
-
-
-            
           </div>
         </div>
       </nav>
@@ -254,7 +259,9 @@ export default function MarketplacePage() {
       {/* --- PRODUCT GRID --- */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
+          {loadingProducts ? (
+            <p className="col-span-full text-center py-12 text-gray-500 font-bold">Loading marketplace...</p>
+          ) : products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map((product) => (
             <div key={product.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden flex flex-col">
               
               {/* Image Header with Leaf Watermark */}
@@ -265,7 +272,7 @@ export default function MarketplacePage() {
                   </span>
                   <div className="flex items-center bg-white/90 backdrop-blur-sm px-2 py-1.5 rounded-lg shadow-sm">
                     <Star className="h-3 w-3 text-yellow-500 fill-current mr-1" />
-                    <span className="text-xs font-bold text-gray-700">{product.rating}</span>
+                    <span className="text-xs font-bold text-gray-700">4.9</span>
                   </div>
                 </div>
                 
@@ -275,7 +282,7 @@ export default function MarketplacePage() {
                 {/* Product Type Tag */}
                 <div className="relative z-10">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-800/10 text-green-800 border border-green-800/20">
-                    <Wheat className="h-3 w-3 mr-1" /> {product.type}
+                    <Wheat className="h-3 w-3 mr-1" /> {product.category_name}
                   </span>
                 </div>
               </div>
@@ -289,11 +296,11 @@ export default function MarketplacePage() {
                 <div className="space-y-2 mt-2 mb-6">
                   <div className="flex items-center text-gray-500 text-sm font-medium">
                     <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                    {product.region}
+                    Verified Ethiopian Source
                   </div>
                   <div className="flex items-center text-gray-500 text-sm font-medium">
                     <Sun className="h-4 w-4 mr-2 text-yellow-500" />
-                    {product.season}
+                    Current Season
                   </div>
                 </div>
                 
@@ -301,12 +308,12 @@ export default function MarketplacePage() {
                 <div className="mt-auto pt-4 border-t border-gray-100">
                   <div className="flex justify-between items-end mb-4">
                     <div>
-                      <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Price per Kg</p>
-                      <p className="text-2xl font-extrabold text-green-700">{product.pricePerKg} <span className="text-sm text-gray-500 font-medium">ETB</span></p>
+                      <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Price per {product.unit_of_measure}</p>
+                      <p className="text-2xl font-extrabold text-green-700">{product.estimated_price_per_unit} <span className="text-sm text-gray-500 font-medium">ETB</span></p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Min Order</p>
-                      <p className="text-sm font-bold text-gray-900">{product.minOrderKg} kg</p>
+                      <p className="text-sm font-bold text-gray-900">{product.minimum_order_quantity} {product.unit_of_measure}</p>
                     </div>
                   </div>
                   
@@ -326,10 +333,8 @@ export default function MarketplacePage() {
       {/* --- CART DRAWER OVERLAY --- */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
           
-          {/* Drawer */}
           <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="px-6 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h2 className="text-xl font-extrabold text-gray-900 flex items-center">
@@ -354,22 +359,22 @@ export default function MarketplacePage() {
                       <X className="h-4 w-4" />
                     </button>
                     <h4 className="font-bold text-gray-900 pr-6">{item.product.name}</h4>
-                    <p className="text-xs font-medium text-gray-500 mb-3">{item.product.pricePerKg} ETB / kg</p>
+                    <p className="text-xs font-medium text-gray-500 mb-3">{item.product.estimated_price_per_unit} ETB / {item.product.unit_of_measure}</p>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Quantity (Kg)</label>
+                        <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Qty ({item.product.unit_of_measure})</label>
                         <input 
                           type="number" 
-                          min={item.product.minOrderKg}
-                          step={100}
+                          min={item.product.minimum_order_quantity}
+                          step={10}
                           className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-bold focus:ring-green-500 focus:border-green-500"
-                          value={item.quantityKg}
-                          onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || item.product.minOrderKg)}
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || item.product.minimum_order_quantity)}
                         />
                       </div>
                       <p className="font-extrabold text-green-700">
-                        {(item.product.pricePerKg * item.quantityKg).toLocaleString()} ETB
+                        {(parseFloat(item.product.estimated_price_per_unit) * item.quantity).toLocaleString()} ETB
                       </p>
                     </div>
                   </div>
@@ -377,7 +382,6 @@ export default function MarketplacePage() {
               )}
             </div>
 
-            {/* Cart Footer */}
             {cart.length > 0 && (
               <div className="p-6 bg-gray-50 border-t border-gray-200">
                 <div className="flex justify-between items-center mb-6">
@@ -402,7 +406,6 @@ export default function MarketplacePage() {
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setIsAuthModalOpen(false)}></div>
           
           <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Modal Header */}
             <div className="bg-gradient-to-br from-green-700 to-emerald-900 p-8 text-center relative">
               <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-full transition-colors">
                 <X className="h-4 w-4" />
@@ -414,7 +417,6 @@ export default function MarketplacePage() {
               <p className="text-green-100 mt-2 text-sm font-medium">Please sign in or create a buyer account to finalize your bulk supply request.</p>
             </div>
 
-            {/* Modal Body */}
             <div className="p-8 space-y-4">
               <Link href="/login" className="w-full flex items-center justify-center py-4 bg-green-600 text-white font-extrabold rounded-xl hover:bg-green-700 transition-colors shadow-sm">
                 Log In to Existing Account

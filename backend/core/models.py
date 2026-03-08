@@ -25,6 +25,10 @@ class FarmerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='farmer_profile')
     region = models.CharField(max_length=100)
     primary_product = models.CharField(max_length=100, default="Unknown")
+    
+    # --- The newly added additional products ---
+    additional_products = models.CharField(max_length=255, blank=True, null=True) 
+    registered_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='registered_farmers')
     harvest_season = models.CharField(max_length=100, default="Meher")
     trust_score = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
     is_active = models.BooleanField(default=False)
@@ -46,10 +50,6 @@ class BuyerProfile(models.Model):
 
     def __str__(self):
         return f"Buyer: {self.company_name} ({self.user.username})"
-    
-
-
-
 
 # ==========================================
 # CUSTOM MANAGERS FOR ADMIN SEPARATION
@@ -82,7 +82,7 @@ class AdminUser(User):
     class Meta:
         proxy = True
         verbose_name = 'Admin'
-        verbose_name_plural = '1. Admins' # Numbers used to force ordering in the Admin Sidebar
+        verbose_name_plural = '1. Admins' 
 
 class AgentUser(User):
     objects = AgentManager()

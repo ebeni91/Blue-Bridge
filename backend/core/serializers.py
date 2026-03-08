@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import FarmerProfile, BuyerProfile
-
+import uuid
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -78,3 +78,127 @@ class BuyerRegistrationSerializer(serializers.ModelSerializer):
         )
 
         return user
+
+
+
+# --- ADMIN MANAGEMENT SERIALIZERS ---
+class AdminAgentSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'phone_number', 'password', 'is_active']
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', 'changeme123')
+        user = User.objects.create_user(**validated_data, role=User.Role.AGENT, password=password)
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+ 
+class AdminFarmerSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    input_full_name = serializers.CharField(write_only=True)
+    phone_number = serializers.CharField(source='user.phone_number')
+    is_active = serializers.BooleanField(source='user.is_active', required=False)
+    
+    class Meta:
+        model = FarmerProfile
+        fields = ['id', 'full_name', 'input_full_name', 'phone_number', 'region', 'primary_product', 'additional_products', 'trust_score', 'is_active']
+        read_only_fields = ['trust_score']
+
+    def get_full_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.phone_number
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        full_name = validated_data.pop('input_full_name')
+        phone_number = user_data.get('phone_number')
+        
+        name_parts = full_name.split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+        # Farmers don't log in via web, so generate a random unusable password
+        user = User.objects.create_user(
+            username=phone_number, # Phone number is the unique identifier
+            phone_number=phone_number,
+            first_name=first_name,
+            last_name=last_name,
+            password=uuid.uuid4().hex, 
+            role=User.Role.FARMER,
+            is_active=user_data.get('is_active', True)
+        )
+        
+        profile = FarmerProfile.objects.create(user=user, **validated_data)
+        return profile
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        full_name = validated_data.pop('input_full_name', None)
+        user = instance.user
+
+        if full_name:
+            name_parts = full_name.split(' ', 1)
+            user.first_name = name_parts[0]
+            user.last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        if 'phone_number' in user_data: 
+            user.phone_number = user_data['phone_number']
+            user.username = user_data['phone_number'] # Keep username synced with phone
+        if 'is_active' in user_data: user.is_active = user_data['is_active']
+        user.save()
+
+        if 'region' in validated_data: instance.region = validated_data['region']
+        if 'primary_product' in validated_data: instance.primary_product = validated_data['primary_product']
+        if 'additional_products' in validated_data: instance.additional_products = validated_data['additional_products']
+        instance.save()
+        
+        return instance
+
+
+class AgentFarmerSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    input_full_name = serializers.CharField(write_only=True)
+    phone_number = serializers.CharField(source='user.phone_number')
+    
+    class Meta:
+        model = FarmerProfile
+        fields = ['id', 'full_name', 'input_full_name', 'phone_number', 'region', 'primary_product', 'additional_products', 'trust_score']
+        read_only_fields = ['trust_score']
+
+    def get_full_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.phone_number
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        full_name = validated_data.pop('input_full_name')
+        phone_number = user_data.get('phone_number')
+        
+        name_parts = full_name.split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+        user = User.objects.create_user(
+            username=phone_number,
+            phone_number=phone_number,
+            first_name=first_name,
+            last_name=last_name,
+            password=uuid.uuid4().hex, 
+            role=User.Role.FARMER,
+            is_active=True
+        )
+        
+        # Automatically tie the farmer to the agent making the request!
+        agent = self.context['request'].user
+        profile = FarmerProfile.objects.create(user=user, registered_by=agent, **validated_data)
+        return profile
