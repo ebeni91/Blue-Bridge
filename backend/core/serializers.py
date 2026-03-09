@@ -113,8 +113,8 @@ class AdminFarmerSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = FarmerProfile
-        fields = ['id', 'full_name', 'input_full_name', 'phone_number', 'region', 'primary_product', 'additional_products', 'trust_score', 'is_active']
-        read_only_fields = ['trust_score']
+        fields = ['id', 'farmer_id', 'full_name', 'input_full_name', 'phone_number', 'region', 'address', 'primary_product', 'secondary_product', 'harvest_season', 'trust_score', 'is_active']
+        read_only_fields = ['trust_score', 'farmer_id']
 
     def get_full_name(self, obj):
         return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.phone_number
@@ -125,21 +125,21 @@ class AdminFarmerSerializer(serializers.ModelSerializer):
         phone_number = user_data.get('phone_number')
         
         name_parts = full_name.split(' ', 1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Generate the unique ID to serve as their permanent system username
+        new_farmer_id = f"FARM-{uuid.uuid4().hex[:6].upper()}"
 
-        # Farmers don't log in via web, so generate a random unusable password
         user = User.objects.create_user(
-            username=phone_number, # Phone number is the unique identifier
+            username=new_farmer_id, 
             phone_number=phone_number,
-            first_name=first_name,
-            last_name=last_name,
-            password=uuid.uuid4().hex, 
-            role=User.Role.FARMER,
+            first_name=name_parts[0],
+            last_name=name_parts[1] if len(name_parts) > 1 else '',
+            password=uuid.uuid4().hex, # Unusable random password
+            role=User.Role.FARMER,     # STRICTLY ENFORCE ROLE
             is_active=user_data.get('is_active', True)
         )
         
-        profile = FarmerProfile.objects.create(user=user, **validated_data)
+        profile = FarmerProfile.objects.create(user=user, farmer_id=new_farmer_id, **validated_data)
         return profile
 
     def update(self, instance, validated_data):
@@ -160,7 +160,7 @@ class AdminFarmerSerializer(serializers.ModelSerializer):
 
         if 'region' in validated_data: instance.region = validated_data['region']
         if 'primary_product' in validated_data: instance.primary_product = validated_data['primary_product']
-        if 'additional_products' in validated_data: instance.additional_products = validated_data['additional_products']
+        if 'secondary_product' in validated_data: instance.secondary_product = validated_data['secondary_product']
         instance.save()
         
         return instance

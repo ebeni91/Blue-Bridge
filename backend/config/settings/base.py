@@ -116,3 +116,10 @@ JAZZMIN_SETTINGS = {
     "copyright": "Blue Bridge Ltd",
     # "show_ui_builder": True, # This gives you a magic button to change colors directly in the browser!
 }
+
+
+# --- CUSTOM AUTHENTICATION ---
+AUTHENTICATION_BACKENDS = [
+    'core.backends.EmailOrPhoneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]

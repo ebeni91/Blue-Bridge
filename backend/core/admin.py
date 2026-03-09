@@ -47,14 +47,14 @@ class BuyerUserAdmin(CustomUserAdmin):
 
 class FarmerProfileInline(admin.StackedInline):
     model = FarmerProfile
-    fk_name = 'user'  # <-- THIS FIXES THE CRASH!
+    fk_name = 'user'
     can_delete = False
     verbose_name_plural = 'Farm & Harvest Details'
-    fields = ('region', 'primary_product', 'additional_products', 'harvest_season', 'trust_score')
-    readonly_fields = ('trust_score',)
+    fields = ('farmer_id', 'region', 'address', 'primary_product', 'secondary_product', 'harvest_season', 'trust_score')
+    readonly_fields = ('trust_score', 'farmer_id')
 
 class FarmerUserForm(forms.ModelForm):
-    phone_number = forms.CharField(required=True, help_text="Required. This will be used as their login ID via SMS.")
+    phone_number = forms.CharField(required=True, help_text="Used for SMS and Login.")
     first_name = forms.CharField(required=True, label="First Name")
     
     class Meta:
@@ -63,9 +63,9 @@ class FarmerUserForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = 'FARMER' # STRICTLY ENFORCE ROLE HERE
         if not user.pk:  
-            user.username = user.phone_number  
-            user.role = 'FARMER'
+            user.username = f"FARM-{uuid.uuid4().hex[:6].upper()}" # Use ID as username
             user.set_password(uuid.uuid4().hex) 
         if commit:
             user.save()

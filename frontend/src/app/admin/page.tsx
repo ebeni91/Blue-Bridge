@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, ShoppingBag, Users, LogOut, Bell, Leaf,
-  TrendingUp, AlertCircle, CheckCircle2, Truck, X, MapPin, Phone, Mail, Edit 
+  TrendingUp, AlertCircle, CheckCircle2, Truck, MapPin, Phone, Mail, Edit 
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -31,9 +31,10 @@ export default function AdminDashboard() {
   const [userModalType, setUserModalType] = useState<'farmer' | 'agent'>('farmer');
   const [editingUser, setEditingUser] = useState<any>(null);
   
+  // Unified form state with the newly added Farmer fields
   const [formData, setFormData] = useState({
     username: '', input_full_name: '', email: '', phone_number: '', password: '',
-    region: '', primary_product: '', additional_products: '', is_active: true
+    region: '', address: '', primary_product: '', secondary_product: '', harvest_season: '', is_active: true
   });
 
   const fetchData = async () => {
@@ -90,12 +91,23 @@ export default function AdminDashboard() {
     setEditingUser(user);
     if (user) {
       setFormData({
-        username: user.username || '', input_full_name: user.full_name || '', email: user.email || '', 
-        phone_number: user.phone_number || '', password: '', region: user.region || '', 
-        primary_product: user.primary_product || '', additional_products: user.additional_products || '', is_active: user.is_active
+        username: user.username || '', 
+        input_full_name: user.full_name || '', 
+        email: user.email || '', 
+        phone_number: user.phone_number || '', 
+        password: '', 
+        region: user.region || '', 
+        address: user.address || '',
+        primary_product: user.primary_product || '', 
+        secondary_product: user.secondary_product || '',
+        harvest_season: user.harvest_season || '',
+        is_active: user.is_active !== undefined ? user.is_active : true
       });
     } else {
-      setFormData({ username: '', input_full_name: '', email: '', phone_number: '', password: '', region: '', primary_product: '', additional_products: '', is_active: true });
+      setFormData({ 
+        username: '', input_full_name: '', email: '', phone_number: '', password: '', 
+        region: '', address: '', primary_product: '', secondary_product: '', harvest_season: '', is_active: true 
+      });
     }
     setIsUserModalOpen(true);
   };
@@ -106,6 +118,7 @@ export default function AdminDashboard() {
     const url = editingUser ? `http://localhost:8000/api/core/admin/${endpoint}/${editingUser.id}/` : `http://localhost:8000/api/core/admin/${endpoint}/`;
     const method = editingUser ? 'PUT' : 'POST';
 
+    // Remove empty password to prevent accidentally resetting it
     const { password, ...restData } = formData;
     const payload = password ? { ...restData, password } : restData;
 
@@ -118,7 +131,7 @@ export default function AdminDashboard() {
         fetchData();
       } else {
         const err = await res.json();
-        alert("Error: " + JSON.stringify(err));
+        alert("Error saving: " + JSON.stringify(err));
       }
     } catch (error) { console.error(error); }
   };
@@ -279,9 +292,10 @@ export default function AdminDashboard() {
                       <Edit className="h-4 w-4" />
                     </button>
                     <div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center text-green-700 font-bold text-xl mb-4">
-                      {farmer.full_name.charAt(0).toUpperCase()}
+                      {farmer.full_name?.charAt(0).toUpperCase() || 'F'}
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{farmer.full_name}</h3>
+                    <p className="text-xs font-bold text-green-600 mb-3">{farmer.farmer_id}</p>
                     <p className="text-sm font-medium text-gray-500 mb-3 flex items-center"><Phone className="h-4 w-4 mr-2 text-gray-400"/> {farmer.phone_number}</p>
                     <div className="flex gap-2 mb-4">
                       <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-md flex items-center"><MapPin className="h-3 w-3 mr-1"/>{farmer.region}</span>
@@ -304,7 +318,7 @@ export default function AdminDashboard() {
                       <Edit className="h-4 w-4" />
                     </button>
                     <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-700 font-bold text-xl mb-4">
-                      {agent.username.charAt(0).toUpperCase()}
+                      {agent.username?.charAt(0).toUpperCase() || 'A'}
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{agent.username}</h3>
                     <p className="text-sm font-medium text-gray-500 mb-1 flex items-center"><Mail className="h-4 w-4 mr-2 text-gray-400"/> {agent.email || 'No email'}</p>
@@ -329,26 +343,34 @@ export default function AdminDashboard() {
             <div className="space-y-4 mb-8 max-h-[60vh] overflow-y-auto px-2">
               {userModalType === 'farmer' ? (
                 <>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Full Name</label>
-                    <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.input_full_name} onChange={(e) => setFormData({...formData, input_full_name: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Phone Number</label>
-                    <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Address / Region</label>
-                    <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.region} onChange={(e) => setFormData({...formData, region: e.target.value})} />
-                  </div>
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Full Name</label>
+                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.input_full_name} onChange={(e) => setFormData({...formData, input_full_name: e.target.value})} />
+                    </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Primary Product</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Phone Number</label>
+                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Harvest Season</label>
+                      <input type="text" placeholder="e.g. Meher" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.harvest_season} onChange={(e) => setFormData({...formData, harvest_season: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Region</label>
+                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.region} onChange={(e) => setFormData({...formData, region: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Specific Address</label>
+                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Primary Crop</label>
                       <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.primary_product} onChange={(e) => setFormData({...formData, primary_product: e.target.value})} />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Additional Products</label>
-                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.additional_products} onChange={(e) => setFormData({...formData, additional_products: e.target.value})} />
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Secondary Crops</label>
+                      <input type="text" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500" value={formData.secondary_product} onChange={(e) => setFormData({...formData, secondary_product: e.target.value})} />
                     </div>
                   </div>
                 </>

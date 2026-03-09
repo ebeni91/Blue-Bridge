@@ -22,21 +22,30 @@ class User(AbstractUser):
         return f"{self.username} - {self.role}"
 
 class FarmerProfile(models.Model):
+    # --- NEW: Unique Auto-Generated Farmer ID ---
+    farmer_id = models.CharField(max_length=20, unique=True, blank=True)
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='farmer_profile')
     region = models.CharField(max_length=100)
-    primary_product = models.CharField(max_length=100, default="Unknown")
+    address = models.TextField(blank=True, null=True) # NEW
     
-    # --- The newly added additional products ---
-    additional_products = models.CharField(max_length=255, blank=True, null=True) 
+    primary_product = models.CharField(max_length=100, default="Unknown")
+    secondary_product = models.CharField(max_length=255, blank=True, null=True) # RENAMED
+    harvest_season = models.CharField(max_length=100, default="Meher") # ADDED
+    
     registered_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='registered_farmers')
-    harvest_season = models.CharField(max_length=100, default="Meher")
     trust_score = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Farmer {self.user.username} - {self.region}"
+    def save(self, *args, **kwargs):
+        # Automatically generate a unique Farmer ID if they don't have one
+        if not self.farmer_id:
+            self.farmer_id = f"FARM-{uuid.uuid4().hex[:6].upper()}"
+        super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.farmer_id} - {self.user.first_name}"
 class BuyerProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='buyer_profile')

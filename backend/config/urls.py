@@ -12,6 +12,12 @@ class CustomTokenSerializer(TokenObtainPairSerializer):
         token['role'] = user.role 
         return token
 
+    # --- NEW: This sends the role to the React frontend explicitly! ---
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['role'] = self.user.role
+        return data
+
 class CustomTokenView(TokenObtainPairView):
     serializer_class = CustomTokenSerializer
 # ----------------------------
